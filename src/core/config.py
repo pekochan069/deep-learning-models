@@ -11,7 +11,7 @@ from .loss import loss_function_names
 logger = logging.getLogger(__name__)
 
 # Define model names locally to avoid circular import
-model_names = Literal["example_cnn", "le_net", "alex_net"]
+model_names = Literal["example_cnn", "le_net", "alex_net", "vgg11"]
 
 
 class Config(BaseModel):

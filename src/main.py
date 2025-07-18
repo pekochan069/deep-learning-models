@@ -55,6 +55,20 @@ def main():
     Config.save_config(config)
     # config = Config.load_config("alex_net")
 
+    # config = Config(
+    #     name="vgg11",
+    #     model="vgg11",
+    #     dataset="imagenet",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("vgg11")
+
     model = get_model(config)
 
     train, test = get_dataset(config.dataset)
@@ -63,7 +77,7 @@ def main():
     )
     test_loader = DataLoader(test)
 
-    model.summary(input_size=(1, 1, 28, 28))
+    model.summary(input_size=(1, 3, 224, 224))
     model.fit(train_loader)
     model.plot_history()
 
