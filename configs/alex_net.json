@@ -1,0 +1,13 @@
+{
+    "name": "alex_net",
+    "model": "alex_net",
+    "dataset": "imagenet",
+    "batch_size": 64,
+    "shuffle": true,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15
+}

@@ -1,0 +1,63 @@
+[project]
+name = "models"
+version = "0.1.0"
+description = "Implement various Deep Learning models"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.3",
+    "numpy>=2.3.1",
+    "pandas>=2.3.1",
+    "polars>=1.31.0",
+    "pydantic>=2.11.7",
+    "pytorch-triton-xpu>=3.3.1",
+    "safetensors>=0.5.3",
+    "scipy>=1.16.0",
+    "seaborn>=0.13.2",
+    "tinygrad>=0.10.3",
+    "torch>=2.7.1",
+    "torchinfo>=1.8.0",
+    "torchvision>=0.22.1",
+    "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "jupyter>=1.1.1",
+    "poethepoet>=0.36.0",
+    "ruff>=0.12.1",
+]
+
+[tool.uv]
+
+[tool.poe.tasks]
+main = "src/main.py"
+format = "ruff format src"
+lint = "ruff check --fix src"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-xpu"
+url = "https://download.pytorch.org/whl/xpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-extension-xpu"
+url = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-xpu" }]
+torchvision = [{ index = "pytorch-xpu" }]
+pytorch-triton-xpu = [{ index = "pytorch-xpu" }]
+intel-extension-for-pytorch = [{ index = "pytorch-extension-xpu" }]

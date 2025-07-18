@@ -1,0 +1,12 @@
+{
+    "name": "example_cnn",
+    "model": "example_cnn",
+    "dataset": "mnist",
+    "batch_size": 64,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15
+}
