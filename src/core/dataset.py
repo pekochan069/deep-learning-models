@@ -1,8 +1,7 @@
-from typing import Callable, Literal
+from typing import Callable
 from torchvision import datasets, transforms
 
-
-dataset_names = Literal["mnist", "cifar10", "cifar100", "fashion_mnist", "imagenet"]
+from .names import dataset_names
 
 
 def get_dataset(

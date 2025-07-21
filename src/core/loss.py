@@ -1,7 +1,6 @@
 import torch.nn as nn
-from typing import Literal
 
-loss_function_names = Literal["cross_entropy", "mse", "nll_loss"]
+from .names import loss_function_names
 
 
 def get_loss_function(name: loss_function_names) -> nn.Module:

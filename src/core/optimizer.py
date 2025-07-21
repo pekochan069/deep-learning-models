@@ -1,7 +1,6 @@
-from typing import Literal
 import torch.optim as optim
 
-optimizer_names = Literal["sgd", "adam", "adamw"]
+from .names import optimizer_names
 
 
 def get_optimizer(name: optimizer_names) -> type[optim.Optimizer]:

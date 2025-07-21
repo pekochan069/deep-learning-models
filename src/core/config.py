@@ -1,17 +1,17 @@
 import json
 import logging
 import os
-from typing import Self, Literal
+from typing import Self
 from pydantic import BaseModel
 
-from .optimizer import optimizer_names
-from .dataset import dataset_names
-from .loss import loss_function_names
+from .names import (
+    dataset_names,
+    model_names,
+    loss_function_names,
+    optimizer_names,
+)
 
 logger = logging.getLogger(__name__)
-
-# Define model names locally to avoid circular import
-model_names = Literal["example_cnn", "le_net", "alex_net", "vgg11"]
 
 
 class Config(BaseModel):
