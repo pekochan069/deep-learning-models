@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from core.config import Config
+from core.dataset import get_num_classes
 
 from ..base_model import BaseModel
 
@@ -35,9 +36,10 @@ class AlexNet(BaseModel):
             nn.MaxPool2d(kernel_size=3, stride=2),
         )
 
-        fc1 = nn.Linear(256 * 6 * 6, 4096)
+        fc1 = nn.Linear(256 * 5 * 5, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        num_classes = get_num_classes(config.dataset)
+        fc3 = nn.Linear(4096, num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")

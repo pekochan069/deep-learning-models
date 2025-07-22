@@ -44,7 +44,7 @@ def main():
     config = Config(
         name="alex_net",
         model="alex_net",
-        dataset="imagenet",
+        dataset="mini_imagenet",
         batch_size=64,
         shuffle=True,
         optimizer="adam",
@@ -71,23 +71,24 @@ def main():
 
     model = get_model(config)
 
-    train, test = get_dataset(config.dataset)
-    train_loader = DataLoader(
-        train, batch_size=config.batch_size, shuffle=config.shuffle
-    )
-    test_loader = DataLoader(test)
+    # ImageNet 데이터셋은 기본 transform이 자동으로 적용됩니다
+    dataset = get_dataset(config.dataset, config.batch_size, config.shuffle)
 
-    model.summary(input_size=(1, 3, 224, 224))
-    model.fit(train_loader)
+    print(f"Dataset: {config.dataset}")
+    print(f"Train dataset size: {len(dataset.train)}")
+    print(f"Train data shape: {dataset.train.dataset[0][0].shape}")
+
+    model.summary((1, 3, 224, 224))
+    model.fit(dataset.train)
     model.plot_history()
 
     model.save(config.name)
 
     # model.load(config.name)
 
-    predictions = model.predict(test_loader)
+    predictions = model.predict(dataset.test)
     predictions = torch.argmax(predictions, dim=1)
-    accuracy = (predictions == test.targets).float().mean().item() * 100  # type: ignore
+    accuracy = (predictions == dataset.test.targets).float().mean().item() * 100  # type: ignore
     logger.info(f"Test Accuracy: {accuracy:.2f}%")
 
 

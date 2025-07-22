@@ -19,7 +19,7 @@ class Config(BaseModel):
     model: model_names
     dataset: dataset_names
     batch_size: int
-    shuffle: bool | None = None
+    shuffle: bool = False
     optimizer: optimizer_names
     optimizer_params: dict = {}
     loss_function: loss_function_names

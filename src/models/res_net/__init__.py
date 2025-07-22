@@ -48,7 +48,7 @@ class ResBlock(nn.Module):
 
 class ResNet(BaseModel):
     def __init__(self, config: Config, res_blocks: list[ResBlock]):
-        super(ResNet, self).__init__(config)
+        super(ResNet, self).__init__(config, input_size=(3, 224, 224))
         self.layer1 = nn.Sequential(
             nn.Conv2d(
                 in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3
@@ -72,7 +72,7 @@ class ResNet18(BaseModel):
 
         fc1 = nn.Linear(512 * 1 * 1, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        fc3 = nn.Linear(4096, 100)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")

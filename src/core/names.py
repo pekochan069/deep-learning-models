@@ -1,7 +1,9 @@
 from typing import Literal
 
 
-dataset_names = Literal["mnist", "cifar10", "cifar100", "fashion_mnist", "imagenet"]
+dataset_names = Literal[
+    "mnist", "cifar10", "cifar100", "fashion_mnist", "imagenet", "mini_imagenet"
+]
 model_names = Literal[
     "example_cnn",
     "le_net",
