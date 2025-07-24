@@ -93,3 +93,23 @@ class LeNet(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")

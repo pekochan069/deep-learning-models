@@ -17,6 +17,9 @@ model_names = Literal[
     "res_net50",
     "res_net101",
     "res_net152",
+    "inception_v1",
+    "inception_v2",
+    "inception_v3",
 ]
 loss_function_names = Literal["cross_entropy", "mse", "nll_loss"]
 optimizer_names = Literal["sgd", "adam", "adamw"]

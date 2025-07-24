@@ -1,9 +1,9 @@
 {
-    "name": "example_cnn",
-    "model": "example_cnn",
-    "dataset": "mnist",
+    "name": "inception_v1_mini_imagenet",
+    "model": "inception_v1",
+    "dataset": "mini_imagenet",
     "batch_size": 64,
-    "shuffle": false,
+    "shuffle": true,
     "optimizer": "adam",
     "optimizer_params": {
         "lr": 0.001

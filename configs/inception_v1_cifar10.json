@@ -1,9 +1,9 @@
 {
-    "name": "example_cnn",
-    "model": "example_cnn",
-    "dataset": "mnist",
+    "name": "inception_v1_cifar10",
+    "model": "inception_v1",
+    "dataset": "cifar10",
     "batch_size": 64,
-    "shuffle": false,
+    "shuffle": true,
     "optimizer": "adam",
     "optimizer_params": {
         "lr": 0.001

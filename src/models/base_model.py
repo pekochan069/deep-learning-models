@@ -72,6 +72,8 @@ class BaseModel(nn.Module):
         loss_function = get_loss_function(self.config.loss_function).to(self.device)
 
         for epoch in range(self.config.epochs):
+            self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")
+
             epoch_loss = self.train_epoch(train_loader, optimizer, loss_function)
 
             self.history.train_loss.append(epoch_loss)
@@ -80,31 +82,33 @@ class BaseModel(nn.Module):
                 epoch_val_loss = self.validate_epoch(val_loader, loss_function)
                 self.history.val_loss.append(epoch_val_loss)
                 self.logger.info(
-                    f"Epoch {epoch + 1}/{self.config.epochs}, "
+                    f"Epoch {epoch + 1}/{self.config.epochs} finished, "
                     f"Train Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}"
                 )
             else:
                 self.logger.info(
-                    f"Epoch {epoch + 1}/{self.config.epochs}, Loss: {epoch_loss:.4f}"
+                    f"Epoch {epoch + 1}/{self.config.epochs} finished, Loss: {epoch_loss:.4f}"
                 )
 
         self.logger.info("Training complete.")
 
+    @abstractmethod
     def predict(self, data_loader: DataLoader):
         """Evaluate the model on the provided data loader."""
-        self.logger.info("Evaluating model...")
-        self.eval()
+        pass
+        # self.logger.info("Evaluating model...")
+        # self.eval()
 
-        predictions = []
-        with torch.no_grad():
-            for inputs, targets in tqdm(data_loader, desc="Evaluating"):
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
+        # predictions = []
+        # with torch.no_grad():
+        #     for inputs, targets in tqdm(data_loader, desc="Evaluating"):
+        #         inputs, targets = inputs.to(self.device), targets.to(self.device)
 
-                outputs = self(inputs)
-                predictions.append(self.process_output(outputs))
+        #         outputs = self(inputs)
+        #         predictions.append(self.process_output(outputs))
 
-        self.logger.info("Evaluation complete.")
-        return torch.cat(predictions, dim=0)
+        # self.logger.info("Evaluation complete.")
+        # return torch.cat(predictions, dim=0)
 
     def process_output(self, output: torch.Tensor) -> torch.Tensor:
         """Process the model output."""
@@ -119,5 +123,5 @@ class BaseModel(nn.Module):
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.grid()
-        plt.savefig("training_loss.png")
+        plt.savefig(f"images/{self.config.name}_training_loss.png")
         plt.show()

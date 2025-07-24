@@ -1,13 +1,13 @@
 {
-    "name": "example_cnn",
-    "model": "example_cnn",
-    "dataset": "mnist",
+    "name": "res_net50",
+    "model": "res_net50",
+    "dataset": "mini_imagenet",
     "batch_size": 64,
-    "shuffle": false,
+    "shuffle": true,
     "optimizer": "adam",
     "optimizer_params": {
         "lr": 0.001
     },
     "loss_function": "cross_entropy",
-    "epochs": 15
+    "epochs": 3
 }

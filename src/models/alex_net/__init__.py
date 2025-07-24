@@ -13,6 +13,7 @@ from ..base_model import BaseModel
 class AlexNet(BaseModel):
     def __init__(self, config: Config):
         super(AlexNet, self).__init__(config)
+        self.num_classes = get_num_classes(config.dataset)
 
         self.layer1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=4),
@@ -38,8 +39,7 @@ class AlexNet(BaseModel):
 
         fc1 = nn.Linear(256 * 5 * 5, 4096)
         fc2 = nn.Linear(4096, 4096)
-        num_classes = get_num_classes(config.dataset)
-        fc3 = nn.Linear(4096, num_classes)
+        fc3 = nn.Linear(4096, self.num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")
@@ -96,3 +96,23 @@ class AlexNet(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")

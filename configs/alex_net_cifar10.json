@@ -1,9 +1,9 @@
 {
-    "name": "example_cnn",
-    "model": "example_cnn",
-    "dataset": "mnist",
+    "name": "alex_net_cifar10",
+    "model": "alex_net",
+    "dataset": "cifar10",
     "batch_size": 64,
-    "shuffle": false,
+    "shuffle": true,
     "optimizer": "adam",
     "optimizer_params": {
         "lr": 0.001

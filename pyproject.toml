@@ -5,6 +5,7 @@ description = "Implement various Deep Learning models"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "datasets>=4.0.0",
     "matplotlib>=3.10.3",
     "numpy>=2.3.1",
     "pandas>=2.3.1",

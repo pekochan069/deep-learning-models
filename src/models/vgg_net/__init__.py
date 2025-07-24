@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from core.config import Config
+from core.dataset import get_num_classes
 from models.base_model import BaseModel
 
 
@@ -13,41 +14,42 @@ class VGGNet11(BaseModel):
         super(VGGNet11, self).__init__(config)
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
             nn.LocalResponseNorm(64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer4 = nn.Sequential(
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer5 = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         fc1 = nn.Linear(512 * 1 * 1, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        self.num_classes = get_num_classes(config.dataset)
+        fc3 = nn.Linear(4096, self.num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")
@@ -106,6 +108,26 @@ class VGGNet11(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")
 
 
 class VGGNet13(BaseModel):
@@ -113,44 +135,45 @@ class VGGNet13(BaseModel):
         super(VGGNet13, self).__init__(config)
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer4 = nn.Sequential(
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer5 = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         fc1 = nn.Linear(512 * 1 * 1, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        self.num_classes = get_num_classes(config.dataset)
+        fc3 = nn.Linear(4096, self.num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")
@@ -209,6 +232,26 @@ class VGGNet13(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")
 
 
 class VGGNet16(BaseModel):
@@ -216,56 +259,51 @@ class VGGNet16(BaseModel):
         super(VGGNet16, self).__init__(config)
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer4 = nn.Sequential(
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer5 = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         fc1 = nn.Linear(512 * 1 * 1, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        self.num_classes = get_num_classes(config.dataset)
+        fc3 = nn.Linear(4096, self.num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")
@@ -324,6 +362,26 @@ class VGGNet16(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")
 
 
 class VGGNet19(BaseModel):
@@ -331,50 +389,57 @@ class VGGNet19(BaseModel):
         super(VGGNet19, self).__init__(config)
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer3 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer4 = nn.Sequential(
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.layer5 = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
         fc1 = nn.Linear(512 * 1 * 1, 4096)
         fc2 = nn.Linear(4096, 4096)
-        fc3 = nn.Linear(4096, 1000)
+        self.num_classes = get_num_classes(config.dataset)
+        fc3 = nn.Linear(4096, self.num_classes)
         nn.init.kaiming_uniform_(fc1.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc2.weight, nonlinearity="relu")
         nn.init.kaiming_uniform_(fc3.weight, nonlinearity="relu")
@@ -433,3 +498,23 @@ class VGGNet19(BaseModel):
                 epoch_loss += loss.item()
 
         return epoch_loss / len(val_loader)
+
+    def predict(self, data_loader: DataLoader):
+        self.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for batch in tqdm(data_loader, desc="Predicting"):
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+
+                outputs = self(inputs)
+                predictions = torch.argmax(outputs, dim=1)
+
+                total += targets.size(0)
+                correct += (predictions == targets).sum().item()
+
+        accuracy = (correct / total) * 100
+        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")
