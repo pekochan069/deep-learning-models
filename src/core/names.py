@@ -24,6 +24,8 @@ model_names = Literal[
     "dense_net169",
     "dense_net201",
     "dense_net264",
+    "mobile_net",
+    "shuffle_net_v1",
 ]
 loss_function_names = Literal["cross_entropy", "mse", "nll_loss"]
 optimizer_names = Literal["sgd", "adam", "adamw"]

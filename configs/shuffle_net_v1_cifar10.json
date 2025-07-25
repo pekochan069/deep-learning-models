@@ -1,0 +1,15 @@
+{
+    "name": "shuffle_net_v1_cifar10",
+    "model": "shuffle_net_v1",
+    "dataset": "cifar10",
+    "batch_size": 64,
+    "shuffle": true,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001,
+        "weight_decay": 0.0001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15,
+    "model_params": {}
+}

@@ -168,9 +168,23 @@ def main():
     # Config.save_config(config)
     # config = Config.load_config("dense_net_cifar10")
 
+    # config = Config(
+    #     name="dense_net121_cifar10",
+    #     model="dense_net121",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("dense_net121_cifar10")
+
     config = Config(
-        name="dense_net121_cifar10",
-        model="dense_net121",
+        name="mobile_net_cifar10",
+        model="mobile_net",
         dataset="cifar10",
         batch_size=64,
         shuffle=True,
@@ -180,7 +194,21 @@ def main():
         epochs=15,
     )
     Config.save_config(config)
-    # config = Config.load_config("dense_net121_cifar10")
+    # config = Config.load_config("mobile_net_cifar10")
+
+    # config = Config(
+    #     name="shuffle_net_v1_cifar10",
+    #     model="shuffle_net_v1",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("shuffle_net_v1_cifar10")
 
     model = get_model(config)
 

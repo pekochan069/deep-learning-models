@@ -6,6 +6,8 @@ from .vgg_net import VGGNet11, VGGNet13, VGGNet16, VGGNet19
 from .res_net import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
 from .inception import InceptionV1, InceptionV2
 from .dense_net import DenseNetCifar, DenseNet121, DenseNet169, DenseNet201, DenseNet264
+from .mobile_net import MobileNet
+from .shuffle_net import ShuffleNetV1
 
 
 def get_model(config: Config):
@@ -48,5 +50,9 @@ def get_model(config: Config):
             return DenseNet201(config)
         case "dense_net264":
             return DenseNet264(config)
+        case "mobile_net":
+            return MobileNet(config)
+        case "shuffle_net_v1":
+            return ShuffleNetV1(config)
         case _:
             raise ValueError(f"Unknown model name: {config.model}")

@@ -1,0 +1,14 @@
+{
+    "name": "mobile_net_cifar10",
+    "model": "mobile_net",
+    "dataset": "cifar10",
+    "batch_size": 64,
+    "shuffle": true,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15,
+    "model_params": {}
+}
