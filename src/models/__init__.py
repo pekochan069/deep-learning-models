@@ -4,7 +4,8 @@ from .example_cnn import ExampleCNN
 from .le_net import LeNet
 from .vgg_net import VGGNet11, VGGNet13, VGGNet16, VGGNet19
 from .res_net import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
-from .inception import InceptionV1, InceptionV2, InceptionV3
+from .inception import InceptionV1, InceptionV2
+from .dense_net import DenseNetCifar, DenseNet121, DenseNet169, DenseNet201, DenseNet264
 
 
 def get_model(config: Config):
@@ -37,7 +38,15 @@ def get_model(config: Config):
             return InceptionV1(config)
         case "inception_v2":
             return InceptionV2(config)
-        case "inception_v3":
-            return InceptionV3(config)
+        case "dense_net_cifar":
+            return DenseNetCifar(config)
+        case "dense_net121":
+            return DenseNet121(config)
+        case "dense_net169":
+            return DenseNet169(config)
+        case "dense_net201":
+            return DenseNet201(config)
+        case "dense_net264":
+            return DenseNet264(config)
         case _:
             raise ValueError(f"Unknown model name: {config.model}")

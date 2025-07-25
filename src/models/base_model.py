@@ -1,4 +1,5 @@
 import logging
+import time
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -63,6 +64,7 @@ class BaseModel(nn.Module):
         self.logger.info(
             f"Training {self.config.model} on {self.config.dataset} dataset"
         )
+        start = time.time()
         self.to(self.device)
 
         optimizer = get_optimizer(self.config.optimizer)(
@@ -90,7 +92,8 @@ class BaseModel(nn.Module):
                     f"Epoch {epoch + 1}/{self.config.epochs} finished, Loss: {epoch_loss:.4f}"
                 )
 
-        self.logger.info("Training complete.")
+        end = time.time()
+        self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
 
     @abstractmethod
     def predict(self, data_loader: DataLoader):

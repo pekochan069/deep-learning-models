@@ -1,0 +1,13 @@
+{
+    "name": "inception_v2_cifar10",
+    "model": "inception_v2",
+    "dataset": "cifar10",
+    "batch_size": 64,
+    "shuffle": true,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15
+}

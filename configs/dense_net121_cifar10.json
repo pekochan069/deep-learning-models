@@ -1,0 +1,14 @@
+{
+    "name": "dense_net121_cifar10",
+    "model": "dense_net121",
+    "dataset": "cifar10",
+    "batch_size": 64,
+    "shuffle": true,
+    "optimizer": "adam",
+    "optimizer_params": {
+        "lr": 0.001
+    },
+    "loss_function": "cross_entropy",
+    "epochs": 15,
+    "model_params": {}
+}

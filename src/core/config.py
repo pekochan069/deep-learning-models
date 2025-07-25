@@ -24,6 +24,7 @@ class Config(BaseModel):
     optimizer_params: dict = {}
     loss_function: loss_function_names
     epochs: int
+    model_params: dict = {}
 
     @classmethod
     def save_config(cls, config: Self):

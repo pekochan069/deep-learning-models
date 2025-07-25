@@ -126,9 +126,51 @@ def main():
     # Config.save_config(config)
     # config = Config.load_config("res_net50_cifar10")
 
+    # config = Config(
+    #     name="inception_v1_cifar10",
+    #     model="inception_v1",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("inception_v1_cifar10")
+
+    # config = Config(
+    #     name="inception_v2_cifar10",
+    #     model="inception_v2",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("inception_v2_cifar10")
+
+    # config = Config(
+    #     name="dense_net_cifar10",
+    #     model="dense_net_cifar",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001},
+    #     loss_function="cross_entropy",
+    #     epochs=15,
+    # )
+    # Config.save_config(config)
+    # config = Config.load_config("dense_net_cifar10")
+
     config = Config(
-        name="inception_v1_cifar10",
-        model="inception_v1",
+        name="dense_net121_cifar10",
+        model="dense_net121",
         dataset="cifar10",
         batch_size=64,
         shuffle=True,
@@ -138,7 +180,7 @@ def main():
         epochs=15,
     )
     Config.save_config(config)
-    # config = Config.load_config("inception_v1_cifar10")
+    # config = Config.load_config("dense_net121_cifar10")
 
     model = get_model(config)
 
@@ -153,7 +195,6 @@ def main():
     model.summary((1, 3, 32, 32))
     model.fit(dataset.train)
     model.plot_history()
-
     model.save(config.name)
 
     # model.load(config.name)
