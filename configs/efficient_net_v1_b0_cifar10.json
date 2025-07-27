@@ -1,19 +1,19 @@
 {
-    "name": "dense_net_cifar10",
-    "model": "dense_net_cifar",
+    "name": "efficient_net_v1_b0_cifar10",
+    "model": "efficient_net_v1_b0",
     "dataset": "cifar10",
-    "batch_size": 64,
+    "batch_size": 128,
     "shuffle": true,
-    "optimizer": "adam",
+    "optimizer": "rmsprop",
     "optimizer_params": {
-        "lr": 0.001,
-        "weight_decay": 0.0001
+        "lr": 0.016,
+        "weight_decay": 1e-05
     },
     "loss_function": "cross_entropy",
-    "epochs": 30,
+    "epochs": 100,
     "early_stopping": true,
     "early_stopping_monitor": "val_loss",
     "early_stopping_patience": 5,
-    "early_stopping_min_delta": 0.0,
+    "early_stopping_min_delta": 0.05,
     "model_params": {}
 }

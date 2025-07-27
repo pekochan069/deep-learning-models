@@ -1,9 +1,4 @@
 import logging
-import math
-
-import torch
-
-from tqdm import tqdm
 
 from core.config import Config
 from core.dataset import get_dataset
@@ -119,12 +114,15 @@ def main():
     #     batch_size=64,
     #     shuffle=True,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
     #     loss_function="cross_entropy",
-    #     epochs=15,
+    #     early_stopping=True,
+    #     early_stopping_min_delta=0.05,
+    #     epochs=30,
     # )
     # Config.save_config(config)
     # config = Config.load_config("res_net50_cifar10")
+    # 71.44%
 
     # config = Config(
     #     name="inception_v1_cifar10",
@@ -133,12 +131,15 @@ def main():
     #     batch_size=64,
     #     shuffle=True,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
     #     loss_function="cross_entropy",
-    #     epochs=15,
+    #     early_stopping=True,
+    #     early_stopping_min_delta=0.05,
+    #     epochs=30,
     # )
     # Config.save_config(config)
     # config = Config.load_config("inception_v1_cifar10")
+    # 70.78%
 
     # config = Config(
     #     name="inception_v2_cifar10",
@@ -147,12 +148,15 @@ def main():
     #     batch_size=64,
     #     shuffle=True,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
     #     loss_function="cross_entropy",
-    #     epochs=15,
+    #     early_stopping=True,
+    #     early_stopping_min_delta=0.05,
+    #     epochs=30,
     # )
     # Config.save_config(config)
     # config = Config.load_config("inception_v2_cifar10")
+    # 74.07%
 
     # config = Config(
     #     name="dense_net_cifar10",
@@ -161,12 +165,14 @@ def main():
     #     batch_size=64,
     #     shuffle=True,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
     #     loss_function="cross_entropy",
-    #     epochs=15,
+    #     early_stopping=True,
+    #     epochs=30,
     # )
     # Config.save_config(config)
     # config = Config.load_config("dense_net_cifar10")
+    # 73.09%
 
     # config = Config(
     #     name="dense_net121_cifar10",
@@ -175,26 +181,31 @@ def main():
     #     batch_size=64,
     #     shuffle=True,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
     #     loss_function="cross_entropy",
-    #     epochs=15,
+    #     early_stopping=True,
+    #     early_stopping_min_delta=0.05,
+    #     epochs=30,
     # )
     # Config.save_config(config)
     # config = Config.load_config("dense_net121_cifar10")
+    # 74.32%
 
-    config = Config(
-        name="mobile_net_cifar10",
-        model="mobile_net",
-        dataset="cifar10",
-        batch_size=64,
-        shuffle=True,
-        optimizer="adam",
-        optimizer_params={"lr": 0.001},
-        loss_function="cross_entropy",
-        epochs=15,
-    )
-    Config.save_config(config)
+    # config = Config(
+    #     name="mobile_net_cifar10",
+    #     model="mobile_net",
+    #     dataset="cifar10",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params={"lr": 0.001, "weight_decay": 1e-4},
+    #     loss_function="cross_entropy",
+    #     early_stopping=True,
+    #     epochs=30,
+    # )
+    # Config.save_config(config)
     # config = Config.load_config("mobile_net_cifar10")
+    # 72.96%
 
     # config = Config(
     #     name="shuffle_net_v1_cifar10",
@@ -210,10 +221,26 @@ def main():
     # Config.save_config(config)
     # config = Config.load_config("shuffle_net_v1_cifar10")
 
+    config = Config(
+        name="efficient_net_v1_b0_cifar10",
+        model="efficient_net_v1_b0",
+        dataset="cifar10",
+        batch_size=128,
+        shuffle=True,
+        optimizer="rmsprop",
+        optimizer_params={"lr": 0.016, "weight_decay": 1e-5},
+        loss_function="cross_entropy",
+        early_stopping=True,
+        early_stopping_min_delta=0.05,
+        epochs=100,
+    )
+    Config.save_config(config)
+    # config = Config.load_config("efficient_net_v0_b1_cifar10")
+    # 77.92%
+
     model = get_model(config)
 
-    # ImageNet 데이터셋은 기본 transform이 자동으로 적용됩니다
-    dataset = get_dataset(config.dataset, config.batch_size, config.shuffle)
+    dataset = get_dataset(config)
 
     print(f"Dataset: {config.dataset}")
     print(f"Train dataset size: {len(dataset.train)}")
@@ -221,7 +248,7 @@ def main():
     print(f"Training Steps: {len(dataset.train) * config.epochs}")
 
     model.summary((1, 3, 32, 32))
-    model.fit(dataset.train)
+    model.fit(dataset.train, dataset.val)
     model.plot_history()
     model.save(config.name)
 

@@ -5,6 +5,8 @@ from torch.utils.data import random_split, Dataset as TorchDataset
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 
+from core.config import Config
+
 from .names import dataset_names
 
 
@@ -48,11 +50,12 @@ class HFDataset(TorchDataset):
 
 
 def get_dataset(
-    name: dataset_names,
-    batch_size: int,
-    shuffle: bool,
+    config: Config,
     transform: Callable | None = None,
 ) -> Dataset:
+    name = config.dataset
+    batch_size = config.batch_size
+    shuffle = config.shuffle
     match name:
         case "mnist":
             return mnist(batch_size, shuffle, transform)
@@ -90,9 +93,13 @@ def cifar10(batch_size, shuffle, transform: Callable | None = None):
     train = datasets.CIFAR10("data", download=True, transform=transform, train=True)
     test = datasets.CIFAR10("data", download=True, transform=transform, train=False)
 
+    validation = int(0.1 * len(train))
+    train_set, val_set = random_split(train, [len(train) - validation, validation])
+
     return Dataset(
-        train=DataLoader(train, batch_size=batch_size, shuffle=shuffle),
+        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
         test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
     )
 
 

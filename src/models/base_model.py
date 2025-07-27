@@ -73,6 +73,8 @@ class BaseModel(nn.Module):
         )
         loss_function = get_loss_function(self.config.loss_function).to(self.device)
 
+        early_stop_counter = 0
+
         for epoch in range(self.config.epochs):
             self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")
 
@@ -91,6 +93,45 @@ class BaseModel(nn.Module):
                 self.logger.info(
                     f"Epoch {epoch + 1}/{self.config.epochs} finished, Loss: {epoch_loss:.4f}"
                 )
+
+            if self.config.early_stopping:
+                if self.config.early_stopping_monitor == "val_loss":
+                    if not val_loader:
+                        self.logger.warning(
+                            "Early stopping is enabled but validation data loader is not provided."
+                        )
+                        continue
+
+                    if len(self.history.val_loss) < 2:
+                        continue
+
+                    if (
+                        self.history.val_loss[-1]
+                        < self.history.val_loss[-2]
+                        + self.config.early_stopping_min_delta
+                    ):
+                        early_stop_counter = 0
+                    else:
+                        early_stop_counter += 1
+                else:
+                    if len(self.history.train_loss) < 2:
+                        continue
+
+                    if (
+                        self.history.train_loss[-1]
+                        < self.history.train_loss[-2]
+                        + self.config.early_stopping_min_delta
+                    ):
+                        early_stop_counter = 0
+                    else:
+                        early_stop_counter += 1
+
+            if (
+                self.config.early_stopping
+                and early_stop_counter >= self.config.early_stopping_patience
+            ):
+                self.logger.info(f"Early stopping triggered after {epoch} epochs.")
+                break
 
         end = time.time()
         self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
@@ -121,10 +162,23 @@ class BaseModel(nn.Module):
         summary(self, input_size=input_size)
 
     def plot_history(self):
-        plt.plot(range(1, self.config.epochs + 1), self.history.train_loss, marker="o")
+        plt.plot(
+            range(1, len(self.history.train_loss) + 1),
+            self.history.train_loss,
+            marker="o",
+            label="Train Loss",
+        )
+        if len(self.history.val_loss) > 0:
+            plt.plot(
+                range(1, len(self.history.val_loss) + 1),
+                self.history.val_loss,
+                marker="o",
+                label="Validation Loss",
+            )
         plt.title("Training Loss")
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
         plt.grid()
+        plt.legend()
         plt.savefig(f"images/{self.config.name}_training_loss.png")
         plt.show()

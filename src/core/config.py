@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Self
+from typing import Literal, Self
 from pydantic import BaseModel
 
 from .names import (
@@ -24,6 +24,10 @@ class Config(BaseModel):
     optimizer_params: dict = {}
     loss_function: loss_function_names
     epochs: int
+    early_stopping: bool = False
+    early_stopping_monitor: Literal["val_loss", "train_loss"] = "val_loss"
+    early_stopping_patience: int = 5
+    early_stopping_min_delta: float = 0.0
     model_params: dict = {}
 
     @classmethod
