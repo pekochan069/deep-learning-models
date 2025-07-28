@@ -1,5 +1,4 @@
 import math
-from typing import Literal
 import torch
 import torch.nn as nn
 import torch.optim as optim

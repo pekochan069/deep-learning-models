@@ -20,6 +20,7 @@ from .efficient_net import (
     EfficientNetV1B8,
     EfficientNetV1L2,
 )
+from .gan import GAN
 
 
 def get_model(config: Config):
@@ -86,5 +87,7 @@ def get_model(config: Config):
             return EfficientNetV1B8(config)
         case "efficient_net_v1_l2":
             return EfficientNetV1L2(config)
+        case "gan":
+            return GAN(config)
         case _:
             raise ValueError(f"Unknown model name: {config.model}")

@@ -250,9 +250,9 @@ def main():
     model.summary((1, 3, 32, 32))
     model.fit(dataset.train, dataset.val)
     model.plot_history()
-    model.save(config.name)
+    model.save()
 
-    # model.load(config.name)
+    # model.load()
 
     model.predict(dataset.test)
 

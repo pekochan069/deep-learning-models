@@ -36,6 +36,7 @@ model_names = Literal[
     "efficient_net_v1_b7",
     "efficient_net_v1_b8",
     "efficient_net_v1_l2",
+    "gan",
 ]
 loss_function_names = Literal[
     "l1",

@@ -46,19 +46,19 @@ class BaseModel(nn.Module):
         """Evaluate the model."""
         pass
 
-    def save(self, name: str):
+    def save(self):
         """Save the model."""
-        save_model(self, name)
+        save_model(self, self.config.name)
 
-    def load(self, name: str):
+    def load(self):
         """Load the model and update weights."""
-        loaded_model = load_model(self, name)
+        loaded_model = load_model(self, self.config.name)
         if loaded_model is None:
-            self.logger.error(f"Model {name} not found.")
+            self.logger.error(f"Model {self.config.name} not found.")
             return
         self.load_state_dict(loaded_model.state_dict())
         self.to(self.device)
-        self.logger.info(f"Model {name} loaded successfully.")
+        self.logger.info(f"Model {self.config.name} loaded successfully.")
 
     def fit(self, train_loader: DataLoader, val_loader: DataLoader | None = None):
         self.logger.info(
