@@ -1,8 +1,8 @@
 pre-push:
-  commands:
-    format:
+  jobs:
+    - name: format
       run: uv run poe format
       stage_fixed: true
-    lint:
+    - name: lint
       run: uv run poe lint
       stage_fixed: true
