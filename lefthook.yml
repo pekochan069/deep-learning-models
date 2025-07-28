@@ -1,0 +1,8 @@
+pre-push:
+  commands:
+    format:
+      run: uv run poe format
+      stage_fixed: true
+    lint:
+      run: uv run poe lint
+      stage_fixed: true
