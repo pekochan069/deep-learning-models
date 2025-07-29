@@ -11,3 +11,5 @@ wheels/
 
 data/*
 weights/*
+
+.ruff_cache/

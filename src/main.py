@@ -1,9 +1,8 @@
 import logging
 
 from core.config import Config
-from core.dataset import get_dataset
 from core.logger import init_logger
-from models import get_model
+from core.train_pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -238,23 +237,8 @@ def main():
     # config = Config.load_config("efficient_net_v0_b1_cifar10")
     # 77.92%
 
-    model = get_model(config)
-
-    dataset = get_dataset(config)
-
-    print(f"Dataset: {config.dataset}")
-    print(f"Train dataset size: {len(dataset.train)}")
-    print(f"Train data shape: {dataset.train.dataset[0][0].shape}")
-    print(f"Training Steps: {len(dataset.train) * config.epochs}")
-
-    model.summary((1, 3, 32, 32))
-    model.fit(dataset.train, dataset.val)
-    model.plot_history()
-    model.save()
-
-    # model.load()
-
-    model.predict(dataset.test)
+    pipeline = Pipeline(config)
+    pipeline.run()
 
 
 if __name__ == "__main__":
