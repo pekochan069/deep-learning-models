@@ -161,7 +161,7 @@ class BaseModel(nn.Module):
     def summary(self, input_size: tuple):
         summary(self, input_size=input_size)
 
-    def plot_history(self):
+    def plot_history(self, show=True, save=True):
         plt.plot(
             range(1, len(self.history.train_loss) + 1),
             self.history.train_loss,
@@ -180,5 +180,9 @@ class BaseModel(nn.Module):
         plt.ylabel("Loss")
         plt.grid()
         plt.legend()
-        plt.savefig(f"images/{self.config.name}_training_loss.png")
-        plt.show()
+
+        if save:
+            plt.savefig(f"images/{self.config.name}_training_loss.png")
+
+        if show:
+            plt.show()
