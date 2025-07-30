@@ -62,3 +62,12 @@ torch = [{ index = "pytorch-cu128" }]
 torchvision = [{ index = "pytorch-cu128" }]
 pytorch-triton-xpu = [{ index = "pytorch-xpu" }]
 intel-extension-for-pytorch = [{ index = "pytorch-extension-xpu" }]
+
+[tool.basedpyright]
+include = ["src"]
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportAny = false
+reportExplicitAny = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
