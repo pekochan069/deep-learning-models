@@ -139,6 +139,15 @@ class GANPipeline(Pipeline):
             f"Training Steps: {len(self.dataset.train) * self.config.epochs}"
         )
 
+        # Display model summary
+        if self.config.dataset in ["mnist", "fashion_mnist"]:
+            input_size = (1, 1, 28, 28)
+        elif self.config.dataset in ["cifar10", "cifar100"]:
+            input_size = (1, 3, 32, 32)
+        else:  # imagenet, mini_imagenet
+            input_size = (1, 3, 224, 224)
+        self.model.summary(input_size)
+
         # Train the model
         self.model.fit(self.dataset.train, self.dataset.val)
 

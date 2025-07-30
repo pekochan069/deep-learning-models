@@ -1,16 +1,15 @@
-import logging
 import time
-from typing import Any, final
+from typing import Any, final, override
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from abc import ABCMeta, abstractmethod
 from torchinfo import summary
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
+from ..base_model import BaseModel
 from core.config import GANConfig
-from core.device import get_device
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model, save_model
@@ -30,48 +29,45 @@ class GANHistory:
         self.val_d_loss = []
 
 
-class BaseGANModel(nn.Module, metaclass=ABCMeta):
-    logger: logging.Logger
+class BaseGANModel(BaseModel):
     config: GANConfig
-    device: torch.device
     history: GANHistory
     generator: nn.Module
     discriminator: nn.Module
 
     def __init__(self, config: GANConfig):
-        super(BaseGANModel, self).__init__()
-        self.logger = logging.getLogger("GAN")
+        super(BaseGANModel, self).__init__("GAN")
         self.config = config
-        self.device = get_device()
-
         self.history = GANHistory()
 
-    @abstractmethod
-    def train_epoch(
-        self,
-        train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
-        g_optimizer: optim.Optimizer,
-        d_optimizer: optim.Optimizer,
-        g_loss_function: nn.Module,
-        d_loss_function: nn.Module,
-    ) -> tuple[float, float]:
-        """Train the model."""
-        pass
+    # @abstractmethod
+    # def train_epoch(
+    #     self,
+    #     train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    #     g_optimizer: optim.Optimizer,
+    #     d_optimizer: optim.Optimizer,
+    #     g_loss_function: nn.Module,
+    #     d_loss_function: nn.Module,
+    # ) -> tuple[float, float]:
+    #     """Train the model."""
+    #     pass
 
-    @abstractmethod
-    def validate_epoch(
-        self,
-        val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
-        g_loss_function: nn.Module,
-        d_loss_function: nn.Module,
-    ) -> tuple[float, float]:
-        """Evaluate the model."""
-        pass
+    # @abstractmethod
+    # def validate_epoch(
+    #     self,
+    #     val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    #     g_loss_function: nn.Module,
+    #     d_loss_function: nn.Module,
+    # ) -> tuple[float, float]:
+    #     """Evaluate the model."""
+    #     pass
 
+    @override
     def save(self):
         """Save the model."""
         save_model(self, self.config.name)
 
+    @override
     def load(self):
         """Load the model and update weights."""
         loaded_model = load_model(self, self.config.name)
@@ -82,6 +78,91 @@ class BaseGANModel(nn.Module, metaclass=ABCMeta):
         _ = self.to(self.device)
         self.logger.info(f"Model {self.config.name} loaded successfully.")
 
+    @override
+    def train_epoch(
+        self,
+        train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        g_optimizer: optim.Optimizer,
+        d_optimizer: optim.Optimizer,
+        g_loss_function: nn.Module,
+        d_loss_function: nn.Module,
+    ) -> tuple[float, float]:
+        """Train the model."""
+        _ = self.generator.train()
+        _ = self.discriminator.train()
+        epoch_g_loss = 0.0
+        epoch_d_loss = 0.0
+        for batch in tqdm(train_loader, desc="Training"):
+            inputs, targets = batch
+            inputs = inputs.to(self.device)
+            targets = targets.to(self.device)
+
+            # Generator
+            g_optimizer.zero_grad()
+            z = torch.randn(inputs.size(0), 100, device=self.device)
+
+            g_z = self.generator(z)
+            d_g_z = self.discriminator(g_z)
+            g_loss = g_loss_function(
+                d_g_z,
+                torch.full_like(d_g_z, 1.0, device=self.device),
+            )
+
+            g_loss.backward()
+            g_optimizer.step()
+
+            # Discriminator
+            d_optimizer.zero_grad()
+
+            d_x = self.discriminator(inputs.reshape(inputs.size(0), -1))
+            d_g_z = self.discriminator(g_z.detach())
+            d_loss = d_loss_function(d_x, d_g_z)
+
+            d_loss.backward()
+            d_optimizer.step()
+
+            epoch_g_loss += g_loss.item()
+            epoch_d_loss += d_loss.item()
+
+        _ = self.generator.train(False)
+        _ = self.discriminator.train(False)
+
+        return epoch_g_loss / len(train_loader), epoch_d_loss / len(train_loader)
+
+    @override
+    def validate_epoch(
+        self,
+        val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        g_loss_function: nn.Module,
+        d_loss_function: nn.Module,
+    ) -> tuple[float, float]:
+        """validate the model."""
+        _ = self.eval()
+        epoch_g_loss = 0.0
+        epoch_d_loss = 0.0
+        with torch.no_grad():
+            for batch in tqdm(val_loader, desc="Validating"):
+                inputs, _ = batch
+                inputs = inputs.to(self.device)
+
+                z = torch.randn(inputs.size(0), 100, device=self.device)
+                g_z = self.generator(z)
+                d_g_z = self.discriminator(g_z)
+                g_loss = g_loss_function(
+                    d_g_z,
+                    torch.full_like(d_g_z, self.config.real_label, device=self.device),
+                )
+
+                d_x = self.discriminator(inputs.reshape(inputs.size(0), -1))
+                d_g_z = self.discriminator(g_z)
+                d_loss = d_loss_function(d_x, d_g_z)
+
+                epoch_g_loss += g_loss.item()
+                epoch_d_loss += d_loss.item()
+
+        return epoch_g_loss / len(val_loader), epoch_d_loss / len(val_loader)
+
+    @override
     def fit(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -181,34 +262,42 @@ class BaseGANModel(nn.Module, metaclass=ABCMeta):
         end = time.time()
         self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
 
-    @abstractmethod
+    @override
     def predict(
         self, data_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]
     ) -> Any:
-        """Evaluate the model on the provided data loader."""
-        pass
-        # self.logger.info("Evaluating model...")
-        # self.eval()
+        _ = self.discriminator.eval()
+        _ = self.generator.eval()
 
-        # predictions = []
-        # with torch.no_grad():
-        #     for inputs, targets in tqdm(data_loader, desc="Evaluating"):
-        #         inputs, targets = inputs.to(self.device), targets.to(self.device)
+        with torch.no_grad():
+            z = torch.randn(128, 100, device=self.device)
+            generated_images = self.generator(z)
+            generated_images = generated_images.view(-1, 1, 28, 28)
 
-        #         outputs = self(inputs)
-        #         predictions.append(self.process_output(outputs))
-
-        # self.logger.info("Evaluation complete.")
-        # return torch.cat(predictions, dim=0)
+        images = generated_images.cpu()
+        # show images using matplotlib
+        grid_size = int(images.size(0) ** 0.5)
+        fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
+        for i in range(grid_size):
+            for j in range(grid_size):
+                idx = i * grid_size + j
+                if idx < images.size(0):
+                    axes[i, j].imshow(images[idx].permute(1, 2, 0).numpy(), cmap="gray")
+                axes[i, j].axis("off")
+        plt.tight_layout()
+        plt.savefig(f"images/{self.config.name}_generated_images.png")
+        plt.show()
 
     def process_output(self, output: torch.Tensor) -> torch.Tensor:
         """Process the model output."""
         return output.cpu()
 
+    @override
     def summary(self, input_size: tuple[int, int, int, int]):
         _ = summary(self.generator, input_size=input_size)
         _ = summary(self.discriminator, input_size=input_size)
 
+    @override
     def plot_history(self, show: bool = True, save: bool = True):
         _ = plt.plot(
             range(1, len(self.history.train_g_loss) + 1),

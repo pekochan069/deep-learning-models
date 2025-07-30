@@ -1,6 +1,5 @@
-import logging
 import time
-from typing import Any, final
+from typing import Any, final, override
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -9,8 +8,8 @@ from torchinfo import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from ..base_model import BaseModel
 from core.config import CNNConfig
-from core.device import get_device
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model, save_model
@@ -26,20 +25,33 @@ class History:
         self.val_loss = []
 
 
-class BaseCNNModel(nn.Module):
-    logger: logging.Logger
+class BaseCNNModel(BaseModel):
     config: CNNConfig
-    device: torch.device
     history: History
 
     def __init__(self, config: CNNConfig):
-        super(BaseCNNModel, self).__init__()
-        self.logger = logging.getLogger("CNN")
+        super(BaseCNNModel, self).__init__("CNN")
         self.config = config
-        self.device = get_device()
 
         self.history = History()
 
+    @override
+    def save(self):
+        """Save the model."""
+        save_model(self, self.config.name)
+
+    @override
+    def load(self):
+        """Load the model and update weights."""
+        loaded_model = load_model(self, self.config.name)
+        if loaded_model is None:
+            self.logger.error(f"Model {self.config.name} not found.")
+            return
+        _ = self.load_state_dict(loaded_model.state_dict())
+        _ = self.to(self.device)
+        self.logger.info(f"Model {self.config.name} loaded successfully.")
+
+    @override
     def train_epoch(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -66,6 +78,7 @@ class BaseCNNModel(nn.Module):
 
         return epoch_loss / len(train_loader)
 
+    @override
     def validate_epoch(
         self,
         val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -86,20 +99,7 @@ class BaseCNNModel(nn.Module):
 
         return epoch_loss / len(val_loader)
 
-    def save(self):
-        """Save the model."""
-        save_model(self, self.config.name)
-
-    def load(self):
-        """Load the model and update weights."""
-        loaded_model = load_model(self, self.config.name)
-        if loaded_model is None:
-            self.logger.error(f"Model {self.config.name} not found.")
-            return
-        _ = self.load_state_dict(loaded_model.state_dict())
-        _ = self.to(self.device)
-        self.logger.info(f"Model {self.config.name} loaded successfully.")
-
+    @override
     def fit(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
@@ -178,6 +178,7 @@ class BaseCNNModel(nn.Module):
         end = time.time()
         self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
 
+    @override
     def predict(
         self, data_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]
     ) -> Any:
@@ -205,9 +206,11 @@ class BaseCNNModel(nn.Module):
         """Process the model output."""
         return output.cpu()
 
+    @override
     def summary(self, input_size: tuple[int, int, int, int]):
         _ = summary(self, input_size=input_size)
 
+    @override
     def plot_history(self, show: bool = True, save: bool = True):
         _ = plt.plot(
             range(1, len(self.history.train_loss) + 1),

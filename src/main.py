@@ -2,9 +2,9 @@ import logging
 
 from torchvision import transforms
 
-from core.config import CNNConfig, GANConfig
+from core.config import GANConfig
 from core.logger import init_logger
-from core.train_pipeline import CNNPipeline, GANPipeline
+from core.train_pipeline import GANPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -251,11 +251,9 @@ def main():
         g_optimizer="adam",
         g_optimizer_params={"lr": 0.0002, "betas": (0.5, 0.999)},
         d_optimizer="adam",
-        d_optimizer_params={"lr": 0.0001, "betas": (0.5, 0.999)},
+        d_optimizer_params={"lr": 0.000075, "betas": (0.5, 0.999)},
         g_loss_function="bce_with_logits",
         d_loss_function="gan_discriminator_loss",
-        early_stopping=True,
-        early_stopping_min_delta=0.05,
         epochs=30,
         real_label=0.95,
     )
