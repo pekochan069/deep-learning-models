@@ -29,5 +29,5 @@
     "g_loss_function": "bce_with_logits",
     "d_loss_function": "gan_discriminator_loss",
     "fake_label": 0.0,
-    "real_label": 1.0
+    "real_label": 0.95
 }

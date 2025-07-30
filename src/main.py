@@ -257,6 +257,7 @@ def main():
         early_stopping=True,
         early_stopping_min_delta=0.05,
         epochs=30,
+        real_label=0.95,
     )
     GANConfig.save_config(config)
     # config = GANConfig.load_config("gan_mnist")

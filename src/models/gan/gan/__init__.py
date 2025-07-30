@@ -19,11 +19,11 @@ class Discriminator(nn.Module):
         self.activation_fn = nn.LeakyReLU(0.2, inplace=True)
         self.dropout = nn.Dropout(0.3)
 
-        self.linear1 = nn.Linear(in_channels, 512)
-        self.bn1 = nn.BatchNorm1d(512)
-        self.linear2 = nn.Linear(512, 256)
-        self.bn2 = nn.BatchNorm1d(256)
-        self.linear3 = nn.Linear(256, 1)
+        self.linear1 = nn.Linear(in_channels, 256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.linear2 = nn.Linear(256, 128)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.linear3 = nn.Linear(128, 1)
 
         _ = nn.init.kaiming_uniform_(self.linear1.weight, nonlinearity="relu")
         _ = nn.init.kaiming_uniform_(self.linear2.weight, nonlinearity="relu")
@@ -47,7 +47,6 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.activation_fn = nn.ReLU(inplace=True)
-        self.dropout = nn.Dropout(0.3)
 
         self.linear1 = nn.Linear(100, 256)
         self.bn1 = nn.BatchNorm1d(256)
@@ -57,8 +56,6 @@ class Generator(nn.Module):
         self.bn3 = nn.BatchNorm1d(1024)
         self.linear4 = nn.Linear(1024, output_size)
 
-        self.output_activation = nn.Tanh()  # Use Tanh for output layer
-
         _ = nn.init.kaiming_uniform_(self.linear1.weight, nonlinearity="relu")
         _ = nn.init.kaiming_uniform_(self.linear2.weight, nonlinearity="relu")
         _ = nn.init.kaiming_uniform_(self.linear3.weight, nonlinearity="relu")
@@ -67,12 +64,9 @@ class Generator(nn.Module):
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         o = self.activation_fn(self.bn1(self.linear1(x)))
-        o = self.dropout(o)
         o = self.activation_fn(self.bn2(self.linear2(o)))
-        o = self.dropout(o)
         o = self.activation_fn(self.bn3(self.linear3(o)))
         o = self.linear4(o)
-        o = self.output_activation(o)
 
         return o
 
