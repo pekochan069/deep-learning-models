@@ -2,7 +2,6 @@ from typing import final, override
 import torch
 import torch.nn as nn
 from torchinfo import summary
-from tqdm import tqdm
 
 from core.config import GANConfig
 
