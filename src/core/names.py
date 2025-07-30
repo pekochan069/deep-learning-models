@@ -1,10 +1,10 @@
 from typing import Literal
 
 
-dataset_names = Literal[
+DatasetName = Literal[
     "mnist", "cifar10", "cifar100", "fashion_mnist", "imagenet", "mini_imagenet"
 ]
-model_names = Literal[
+CNNModelName = Literal[
     "example_cnn",
     "le_net",
     "alex_net",
@@ -36,9 +36,9 @@ model_names = Literal[
     "efficient_net_v1_b7",
     "efficient_net_v1_b8",
     "efficient_net_v1_l2",
-    "gan",
 ]
-loss_function_names = Literal[
+GANModelName = Literal["gan"]
+LossFunctionName = Literal[
     "l1",
     "nll",
     "poisson_nll",
@@ -60,8 +60,9 @@ loss_function_names = Literal[
     "triplet_margin",
     "triplet_margin_with_distance",
     "ctc",
+    "gan_discriminator_loss",
 ]
-optimizer_names = Literal[
+OptimizerName = Literal[
     "adafactor",
     "adadelta",
     "adagrad",

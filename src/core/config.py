@@ -1,14 +1,15 @@
 import json
 import logging
 import os
-from typing import Literal, Self
+from typing import Any, Literal, Self
 from pydantic import BaseModel
 
 from .names import (
-    dataset_names,
-    model_names,
-    loss_function_names,
-    optimizer_names,
+    DatasetName,
+    CNNModelName,
+    GANModelName,
+    LossFunctionName,
+    OptimizerName,
 )
 
 logger = logging.getLogger(__name__)
@@ -16,19 +17,14 @@ logger = logging.getLogger(__name__)
 
 class Config(BaseModel):
     name: str
-    model: model_names
-    dataset: dataset_names
+    dataset: DatasetName
     batch_size: int
     shuffle: bool = False
-    optimizer: optimizer_names
-    optimizer_params: dict = {}
-    loss_function: loss_function_names
     epochs: int
     early_stopping: bool = False
     early_stopping_monitor: Literal["val_loss", "train_loss"] = "val_loss"
     early_stopping_patience: int = 5
     early_stopping_min_delta: float = 0.0
-    model_params: dict = {}
 
     @classmethod
     def save_config(cls, config: Self):
@@ -47,3 +43,26 @@ class Config(BaseModel):
             logger.info(f"Config loaded from configs/{name}.json")
 
             return config
+
+
+class CNNConfig(Config):
+    model: CNNModelName
+    model_params: dict[str, Any] = {}
+    optimizer: OptimizerName
+    optimizer_params: dict[str, Any] = {}
+    loss_function: LossFunctionName
+
+
+class GANConfig(Config):
+    model: GANModelName
+    model_params: dict[str, Any] = {}
+    g_optimizer: OptimizerName
+    g_optimizer_params: dict[str, Any] = {}
+    d_optimizer: OptimizerName
+    d_optimizer_params: dict[str, Any] = {}
+
+    g_loss_function: LossFunctionName
+    d_loss_function: LossFunctionName
+
+    fake_label: float = 0.0
+    real_label: float = 1.0

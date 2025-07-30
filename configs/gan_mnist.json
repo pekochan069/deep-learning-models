@@ -1,0 +1,33 @@
+{
+    "name": "gan_mnist",
+    "dataset": "mnist",
+    "batch_size": 128,
+    "shuffle": true,
+    "epochs": 30,
+    "early_stopping": true,
+    "early_stopping_monitor": "val_loss",
+    "early_stopping_patience": 5,
+    "early_stopping_min_delta": 0.05,
+    "model": "gan",
+    "model_params": {},
+    "g_optimizer": "adam",
+    "g_optimizer_params": {
+        "lr": 0.0002,
+        "betas": [
+            0.5,
+            0.999
+        ]
+    },
+    "d_optimizer": "adam",
+    "d_optimizer_params": {
+        "lr": 0.0001,
+        "betas": [
+            0.5,
+            0.999
+        ]
+    },
+    "g_loss_function": "bce_with_logits",
+    "d_loss_function": "gan_discriminator_loss",
+    "fake_label": 0.0,
+    "real_label": 1.0
+}

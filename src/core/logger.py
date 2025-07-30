@@ -55,7 +55,7 @@ def init_logger(level: logging_level):
     }
 
     logging.config.dictConfig(logging_config)
-    queue_handler: logging.handlers.QueueHandler | None = logging.getHandlerByName(
+    queue_handler: logging.handlers.QueueHandler | None = logging.getHandlerByName(  # pyright: ignore[reportAssignmentType]
         "queue_handler"
     )  # type: ignore
 
@@ -64,7 +64,7 @@ def init_logger(level: logging_level):
 
         if listener is not None:
             listener.start()
-            atexit.register(listener.stop)
+            _ = atexit.register(listener.stop)
 
 
 LOG_RECORD_BUILTIN_ATTRS = {
@@ -95,6 +95,8 @@ LOG_RECORD_BUILTIN_ATTRS = {
 
 
 class JSONFormatter(logging.Formatter):
+    fmt_keys: dict[str, str]
+
     def __init__(
         self,
         *,

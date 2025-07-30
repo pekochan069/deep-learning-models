@@ -1,49 +1,58 @@
+from typing import Any
 import torch.nn as nn
 
-from .names import loss_function_names
+from .names import LossFunctionName
+from .loss_functions.gan_discriminator_loss import GANDiscriminatorLoss
 
 
-def get_loss_function(name: loss_function_names) -> nn.Module:
+def get_loss_function(
+    name: LossFunctionName, params: dict[str, Any] | None = None
+) -> nn.Module:
+    if params is None:
+        params = {}
+
     match name:
         case "l1":
-            return nn.L1Loss()
+            return nn.L1Loss(**params)
         case "nll":
-            return nn.NLLLoss()
+            return nn.NLLLoss(**params)
         case "poisson_nll":
-            return nn.PoissonNLLLoss()
+            return nn.PoissonNLLLoss(**params)
         case "gaussian_nll":
-            return nn.GaussianNLLLoss()
+            return nn.GaussianNLLLoss(**params)
         case "kl_div":
-            return nn.KLDivLoss()
+            return nn.KLDivLoss(**params)
         case "mse":
-            return nn.MSELoss()
+            return nn.MSELoss(**params)
         case "bce":
-            return nn.BCELoss()
+            return nn.BCELoss(**params)
         case "bce_with_logits":
-            return nn.BCEWithLogitsLoss()
+            return nn.BCEWithLogitsLoss(**params)
         case "hinge_embedding":
-            return nn.HingeEmbeddingLoss()
+            return nn.HingeEmbeddingLoss(**params)
         case "multi_label_margin":
-            return nn.MultiLabelMarginLoss()
+            return nn.MultiLabelMarginLoss(**params)
         case "smooth_l1":
-            return nn.SmoothL1Loss()
+            return nn.SmoothL1Loss(**params)
         case "huber":
-            return nn.HuberLoss()
+            return nn.HuberLoss(**params)
         case "soft_margin":
-            return nn.SoftMarginLoss()
+            return nn.SoftMarginLoss(**params)
         case "cross_entropy":
-            return nn.CrossEntropyLoss()
+            return nn.CrossEntropyLoss(**params)
         case "multi_label_soft_margin":
-            return nn.MultiLabelSoftMarginLoss()
+            return nn.MultiLabelSoftMarginLoss(**params)
         case "cosine_embedding":
-            return nn.CosineEmbeddingLoss()
+            return nn.CosineEmbeddingLoss(**params)
         case "margin_ranking":
-            return nn.MarginRankingLoss()
+            return nn.MarginRankingLoss(**params)
         case "multi_margin":
-            return nn.MultiMarginLoss()
+            return nn.MultiMarginLoss(**params)
         case "triplet_margin":
-            return nn.TripletMarginLoss()
+            return nn.TripletMarginLoss(**params)
         case "triplet_margin_with_distance":
-            return nn.TripletMarginWithDistanceLoss()
+            return nn.TripletMarginWithDistanceLoss(**params)
         case "ctc":
-            return nn.CTCLoss()
+            return nn.CTCLoss(**params)
+        case "gan_discriminator_loss":
+            return GANDiscriminatorLoss(**params)

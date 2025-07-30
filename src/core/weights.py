@@ -19,5 +19,5 @@ def load_model(model: nn.Module, name: str) -> nn.Module | None:
         return None
 
     state_dict = load_file(f"weights/{name}.safetensors")
-    model.load_state_dict(state_dict)
+    _ = model.load_state_dict(state_dict)
     return model
