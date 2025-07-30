@@ -1,6 +1,10 @@
-from dataclasses import dataclass
 import logging
+import os
+import zipfile
+from dataclasses import dataclass
 from typing import Callable, final, override
+
+from huggingface_hub import hf_hub_download
 import torch
 from torchvision import datasets, transforms  # pyright: ignore[reportMissingTypeStubs]
 from torch.utils.data import random_split, Dataset as TorchDataset
@@ -217,3 +221,47 @@ def mini_imagenet(batch_size: int, shuffle: bool, transform: Callable | None = N
         test=DataLoader(test_dataset, batch_size=batch_size, shuffle=False),
         val=DataLoader(val_dataset, batch_size=batch_size, shuffle=False),
     )
+
+
+def get_div2k(batch_size: int, shuffle: bool, transform: Callable | None = None):  # pyright: ignore[reportMissingTypeArgument]
+    """DIV2K 데이터셋을 로드합니다."""
+    if transform is None:
+        logger.info("Using default transform for DIV2K")
+        transform = transforms.ToTensor()
+    else:
+        logger.info("Using custom transform for DIV2K")
+
+    raw_train_dataset: Dataset = load_dataset(
+        "eugenesiow/Div2k", "bicubic_x2", split="train"
+    )  # pyright: ignore[reportAssignmentType]
+    raw_val_dataset: Dataset = load_dataset(
+        "eugenesiow/Div2k", "bicubic_x2", split="validation"
+    )  # pyright: ignore[reportAssignmentType]
+
+    train_dataset = HFDataset(raw_train_dataset, transform)
+    val_dataset = HFDataset(raw_val_dataset, transform)
+
+    return TrainableDataset(
+        train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
+        test=DataLoader(val_dataset, batch_size=batch_size, shuffle=False),
+    )
+
+
+def get_df2k_ost(batch_size: int, shuffle: bool, transform: Callable | None = None):  # pyright: ignore[reportMissingTypeArgument]
+    if transform is None:
+        logger.info("Using default transform for DF2K OST")
+        transform = transforms.ToTensor()
+    else:
+        logger.info("Using custom transform for DF2K OST")
+
+    if not os.path.exists("data/df2k"):
+        filename = hf_hub_download(
+            repo_id="Iceclear/DF2K-OST",
+            filename="df2k.zip",
+            repo_type="dataset",
+            local_dir="data",
+        )
+
+        # 압축 해제
+        with zipfile.ZipFile(filename, "r") as zip_ref:
+            zip_ref.extractall("data/df2k")
