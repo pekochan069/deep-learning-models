@@ -1,9 +1,6 @@
-from typing import Any, final, override
+from typing import final, override
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
 

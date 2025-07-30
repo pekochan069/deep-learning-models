@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import torch
 import torch.nn as nn
