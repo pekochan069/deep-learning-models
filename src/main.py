@@ -1,10 +1,9 @@
 import logging
 
-from torchvision import transforms
 
 from core.config import GANConfig
-from core.dataset import get_dataset
 from core.logger import init_logger
+from core.optimizer import AdamParams, AdamWParams
 from core.train_pipeline import GANPipeline
 
 logger = logging.getLogger(__name__)
@@ -250,9 +249,9 @@ def main():
     #     batch_size=128,
     #     shuffle=True,
     #     g_optimizer="adam",
-    #     g_optimizer_params={"lr": 0.0002, "betas": (0.5, 0.999)},
+    #     g_optimizer_params=AdamParams(lr=0.0002, betas=(0.5, 0.999)),
     #     d_optimizer="adam",
-    #     d_optimizer_params={"lr": 0.000075, "betas": (0.5, 0.999)},
+    #     d_optimizer_params=AdamParams(lr=0.000075, betas=(0.5, 0.999)),
     #     g_loss_function="bce_with_logits",
     #     d_loss_function="gan_discriminator_loss",
     #     epochs=30,
@@ -280,17 +279,17 @@ def main():
         batch_size=32,
         shuffle=True,
         g_optimizer="adamw",
-        g_optimizer_params={
-            "lr": 1e-4,
-            "betas": (0.9, 0.999),
-            "weight_decay": 1e-2,
-        },
+        g_optimizer_params=AdamWParams(
+            lr=1e-4,
+            betas=(0.9, 0.999),
+            weight_decay=1e-2,
+        ),
         d_optimizer="adamw",
-        d_optimizer_params={
-            "lr": 5e-5,
-            "betas": (0.9, 0.999),
-            "weight_decay": 1e-2,
-        },
+        d_optimizer_params=AdamWParams(
+            lr=5e-5,
+            betas=(0.9, 0.999),
+            weight_decay=1e-2,
+        ),
         g_loss_function="srgan_generator_loss",
         d_loss_function="gan_discriminator_loss",
         epochs=30,
@@ -299,7 +298,7 @@ def main():
     GANConfig.save_config(config)
     # config = GANConfig.load_config("srgan_df2k_ost")
     pipeline = GANPipeline(config)
-    pipeline.run()
+    # pipeline.run()
 
 
 if __name__ == "__main__":

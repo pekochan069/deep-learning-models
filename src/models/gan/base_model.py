@@ -211,11 +211,11 @@ class BaseGANModel(BaseModel):
 
         g_optimizer = get_optimizer(self.config.g_optimizer)(
             self.generator.parameters(),
-            **self.config.g_optimizer_params,
+            **self.config.g_optimizer_params.to_kwargs(),
         )
         d_optimizer = get_optimizer(self.config.d_optimizer)(
             self.discriminator.parameters(),
-            **self.config.d_optimizer_params,
+            **self.config.d_optimizer_params.to_kwargs(),
         )
         g_loss_function = get_loss_function(self.config.g_loss_function).to(self.device)
         d_loss_function = get_loss_function(

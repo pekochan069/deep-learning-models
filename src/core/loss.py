@@ -1,4 +1,5 @@
 from typing import Any
+
 import torch.nn as nn
 
 
@@ -7,9 +8,7 @@ from .loss_functions.gan_discriminator_loss import GANDiscriminatorLoss
 from .loss_functions.srgan_generator_loss import SRGANGeneratorLoss
 
 
-def get_loss_function(
-    name: LossFunctionName, params: dict[str, Any] | None = None
-) -> nn.Module:
+def get_loss_function(name: LossFunctionName, params: dict[str, Any] | None = None):
     if params is None:
         params = {}
 

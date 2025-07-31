@@ -112,7 +112,7 @@ class BaseCNNModel(BaseModel):
         _ = self.to(self.device)
 
         optimizer = get_optimizer(self.config.optimizer)(
-            self.parameters(), **self.config.optimizer_params
+            self.parameters(), **self.config.optimizer_params.to_kwargs()
         )
         loss_function = get_loss_function(self.config.loss_function).to(self.device)
 

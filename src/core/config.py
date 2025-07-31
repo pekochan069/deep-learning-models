@@ -2,7 +2,9 @@ import json
 import logging
 import os
 from typing import Any, Literal, Self
-from pydantic import BaseModel
+from pydantic import BaseModel as PydanticBaseModel
+
+from core.optimizer import OptimizerParams
 
 from .names import (
     DatasetName,
@@ -15,7 +17,7 @@ from .names import (
 logger = logging.getLogger(__name__)
 
 
-class Config(BaseModel):
+class Config(PydanticBaseModel):
     name: str
     dataset: DatasetName
     batch_size: int
@@ -49,7 +51,7 @@ class CNNConfig(Config):
     model: CNNModelName
     model_params: dict[str, Any] = {}
     optimizer: OptimizerName
-    optimizer_params: dict[str, Any] = {}
+    optimizer_params: OptimizerParams
     loss_function: LossFunctionName
 
 
@@ -57,9 +59,9 @@ class GANConfig(Config):
     model: GANModelName
     model_params: dict[str, Any] = {}
     g_optimizer: OptimizerName
-    g_optimizer_params: dict[str, Any] = {}
+    g_optimizer_params: OptimizerParams
     d_optimizer: OptimizerName
-    d_optimizer_params: dict[str, Any] = {}
+    d_optimizer_params: OptimizerParams
 
     g_loss_function: LossFunctionName
     d_loss_function: LossFunctionName

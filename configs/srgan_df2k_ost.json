@@ -12,21 +12,33 @@
     "model_params": {},
     "g_optimizer": "adamw",
     "g_optimizer_params": {
+        "param_type": "adamw",
         "lr": 0.0001,
         "betas": [
             0.9,
             0.999
         ],
-        "weight_decay": 0.01
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
     },
     "d_optimizer": "adamw",
     "d_optimizer_params": {
+        "param_type": "adamw",
         "lr": 5e-05,
         "betas": [
             0.9,
             0.999
         ],
-        "weight_decay": 0.01
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
     },
     "g_loss_function": "srgan_generator_loss",
     "d_loss_function": "gan_discriminator_loss",
