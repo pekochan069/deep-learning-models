@@ -62,7 +62,7 @@ class BaseModel(ABC, nn.Module):
         pass
 
     @abstractmethod
-    def summary(self, input_size: tuple[int, int, int, int]):
+    def summary(self, *args, **kwargs):
         """Print the model summary."""
         pass
 

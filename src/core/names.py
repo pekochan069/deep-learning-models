@@ -2,7 +2,13 @@ from typing import Literal
 
 
 DatasetName = Literal[
-    "mnist", "cifar10", "cifar100", "fashion_mnist", "imagenet", "mini_imagenet"
+    "mnist",
+    "cifar10",
+    "cifar100",
+    "fashion_mnist",
+    "imagenet",
+    "mini_imagenet",
+    "df2k_ost",
 ]
 CNNModelName = Literal[
     "example_cnn",
@@ -37,7 +43,7 @@ CNNModelName = Literal[
     "efficient_net_v1_b8",
     "efficient_net_v1_l2",
 ]
-GANModelName = Literal["gan"]
+GANModelName = Literal["gan", "srgan"]
 LossFunctionName = Literal[
     "l1",
     "nll",
@@ -61,6 +67,7 @@ LossFunctionName = Literal[
     "triplet_margin_with_distance",
     "ctc",
     "gan_discriminator_loss",
+    "srgan_generator_loss",
 ]
 OptimizerName = Literal[
     "adafactor",

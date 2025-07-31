@@ -97,12 +97,32 @@ class BaseGANModel(BaseModel):
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
 
-            # Generator
-            g_optimizer.zero_grad()
             z = torch.randn(inputs.size(0), 100, device=self.device)
+
+            #######################
+            # Train Discriminator #
+            #######################
+
+            d_optimizer.zero_grad()
+
+            d_x = self.discriminator(inputs.reshape(inputs.size(0), -1))
+            g_z = self.generator(z)
+            d_g_z = self.discriminator(g_z)
+
+            d_loss = d_loss_function(d_x, d_g_z)
+
+            d_loss.backward()
+            d_optimizer.step()
+
+            #######################
+            #   Train Generator   #
+            #######################
+
+            g_optimizer.zero_grad()
 
             g_z = self.generator(z)
             d_g_z = self.discriminator(g_z)
+
             g_loss = g_loss_function(
                 d_g_z,
                 torch.full_like(d_g_z, 1.0, device=self.device),
@@ -111,15 +131,29 @@ class BaseGANModel(BaseModel):
             g_loss.backward()
             g_optimizer.step()
 
-            # Discriminator
-            d_optimizer.zero_grad()
+            # # Generator
+            # g_optimizer.zero_grad()
+            # z = torch.randn(inputs.size(0), 100, device=self.device)
 
-            d_x = self.discriminator(inputs.reshape(inputs.size(0), -1))
-            d_g_z = self.discriminator(g_z.detach())
-            d_loss = d_loss_function(d_x, d_g_z)
+            # g_z = self.generator(z)
+            # d_g_z = self.discriminator(g_z)
+            # g_loss = g_loss_function(
+            #     d_g_z,
+            #     torch.full_like(d_g_z, 1.0, device=self.device),
+            # )
 
-            d_loss.backward()
-            d_optimizer.step()
+            # g_loss.backward()
+            # g_optimizer.step()
+
+            # # Discriminator
+            # d_optimizer.zero_grad()
+
+            # d_x = self.discriminator(inputs.reshape(inputs.size(0), -1))
+            # d_g_z = self.discriminator(g_z.detach())
+            # d_loss = d_loss_function(d_x, d_g_z)
+
+            # d_loss.backward()
+            # d_optimizer.step()
 
             epoch_g_loss += g_loss.item()
             epoch_d_loss += d_loss.item()
@@ -293,9 +327,13 @@ class BaseGANModel(BaseModel):
         return output.cpu()
 
     @override
-    def summary(self, input_size: tuple[int, int, int, int]):
-        _ = summary(self.generator, input_size=input_size)
-        _ = summary(self.discriminator, input_size=input_size)
+    def summary(
+        self,
+        discriminator_input_size: tuple[int, int, int, int],
+        generator_input_size: tuple[int, int, int, int],
+    ):
+        _ = summary(self.generator, input_size=generator_input_size)
+        _ = summary(self.discriminator, input_size=discriminator_input_size)
 
     @override
     def plot_history(self, show: bool = True, save: bool = True):

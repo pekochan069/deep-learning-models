@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import gc
 import logging
-from typing import Callable, final, override
+from typing import Any, Callable, final, override
 
 import torch
 
@@ -121,7 +121,11 @@ class GANPipeline(Pipeline):
     model: BaseGANModel
     dataset: TrainableDataset
 
-    def __init__(self, config: GANConfig, dataset_transform: Callable | None = None):  # pyright: ignore[reportMissingTypeArgument]
+    def __init__(
+        self,
+        config: GANConfig,
+        dataset_transform: Callable[[Any], torch.Tensor] | None = None,
+    ):
         super(GANPipeline, self).__init__(logger_name="GANPipeline")
         self.config = config
         self.model = get_gan_model(self.config)
@@ -141,12 +145,21 @@ class GANPipeline(Pipeline):
 
         # Display model summary
         if self.config.dataset in ["mnist", "fashion_mnist"]:
-            input_size = (1, 1, 28, 28)
+            discriminator_input_size = (1, 1, 28, 28)
+            generator_input_size = (1, 1, 28, 28)
         elif self.config.dataset in ["cifar10", "cifar100"]:
-            input_size = (1, 3, 32, 32)
-        else:  # imagenet, mini_imagenet
-            input_size = (1, 3, 224, 224)
-        self.model.summary(input_size)
+            discriminator_input_size = (1, 3, 32, 32)
+            generator_input_size = (1, 3, 32, 32)
+        elif self.config.dataset in ["imagenet", "mini_imagenet"]:
+            discriminator_input_size = (1, 3, 224, 224)
+            generator_input_size = (1, 3, 224, 224)
+        elif self.config.dataset == "df2k_ost":
+            discriminator_input_size = (1, 3, 256, 256)
+            generator_input_size = (1, 3, 64, 64)
+        else:
+            discriminator_input_size = (1, 3, 64, 64)
+            generator_input_size = (1, 3, 64, 64)
+        self.model.summary(discriminator_input_size, generator_input_size)
 
         # Train the model
         self.model.fit(self.dataset.train, self.dataset.val)

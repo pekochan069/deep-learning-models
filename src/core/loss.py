@@ -1,8 +1,10 @@
 from typing import Any
 import torch.nn as nn
 
+
 from .names import LossFunctionName
 from .loss_functions.gan_discriminator_loss import GANDiscriminatorLoss
+from .loss_functions.srgan_generator_loss import SRGANGeneratorLoss
 
 
 def get_loss_function(
@@ -56,3 +58,5 @@ def get_loss_function(
             return nn.CTCLoss(**params)
         case "gan_discriminator_loss":
             return GANDiscriminatorLoss(**params)
+        case "srgan_generator_loss":
+            return SRGANGeneratorLoss(**params)

@@ -3,6 +3,7 @@ import logging
 from torchvision import transforms
 
 from core.config import GANConfig
+from core.dataset import get_dataset
 from core.logger import init_logger
 from core.train_pipeline import GANPipeline
 
@@ -242,34 +243,62 @@ def main():
     # pipeline = CNNPipeline(config)
     # pipeline.run()
 
+    # config = GANConfig(
+    #     name="gan_mnist",
+    #     model="gan",
+    #     dataset="mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     g_optimizer="adam",
+    #     g_optimizer_params={"lr": 0.0002, "betas": (0.5, 0.999)},
+    #     d_optimizer="adam",
+    #     d_optimizer_params={"lr": 0.000075, "betas": (0.5, 0.999)},
+    #     g_loss_function="bce_with_logits",
+    #     d_loss_function="gan_discriminator_loss",
+    #     epochs=30,
+    #     real_label=0.95,
+    # )
+    # GANConfig.save_config(config)
+    # # config = GANConfig.load_config("gan_mnist")
+
+    # pipeline = GANPipeline(
+    #     config,
+    #     transforms.Compose(
+    #         [
+    #             transforms.Resize((28, 28)),
+    #             transforms.ToTensor(),
+    #             transforms.Normalize((0.5,), (0.5,)),
+    #         ]
+    #     ),
+    # )
+    # pipeline.run()
+
     config = GANConfig(
-        name="gan_mnist",
-        model="gan",
-        dataset="mnist",
-        batch_size=128,
+        name="srgan_df2k_ost",
+        model="srgan",
+        dataset="df2k_ost",
+        batch_size=32,
         shuffle=True,
-        g_optimizer="adam",
-        g_optimizer_params={"lr": 0.0002, "betas": (0.5, 0.999)},
-        d_optimizer="adam",
-        d_optimizer_params={"lr": 0.000075, "betas": (0.5, 0.999)},
-        g_loss_function="bce_with_logits",
+        g_optimizer="adamw",
+        g_optimizer_params={
+            "lr": 1e-4,
+            "betas": (0.9, 0.999),
+            "weight_decay": 1e-2,
+        },
+        d_optimizer="adamw",
+        d_optimizer_params={
+            "lr": 5e-5,
+            "betas": (0.9, 0.999),
+            "weight_decay": 1e-2,
+        },
+        g_loss_function="srgan_generator_loss",
         d_loss_function="gan_discriminator_loss",
         epochs=30,
         real_label=0.95,
     )
     GANConfig.save_config(config)
-    # config = GANConfig.load_config("gan_mnist")
-
-    pipeline = GANPipeline(
-        config,
-        transforms.Compose(
-            [
-                transforms.Resize((28, 28)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
-            ]
-        ),
-    )
+    # config = GANConfig.load_config("srgan_df2k_ost")
+    pipeline = GANPipeline(config)
     pipeline.run()
 
 
