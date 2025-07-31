@@ -3,7 +3,7 @@ import logging
 
 from core.config import GANConfig
 from core.logger import init_logger
-from core.optimizer import AdamParams, AdamWParams
+from core.optimizer import AdamWParams
 from core.train_pipeline import GANPipeline
 
 logger = logging.getLogger(__name__)
@@ -298,7 +298,7 @@ def main():
     GANConfig.save_config(config)
     # config = GANConfig.load_config("srgan_df2k_ost")
     pipeline = GANPipeline(config)
-    # pipeline.run()
+    pipeline.run()
 
 
 if __name__ == "__main__":
