@@ -273,9 +273,9 @@ def main():
     # pipeline.run()
 
     config = GANConfig(
-        name="srgan_df2k_ost",
+        name="srgan_df2k_ost_small",
         model="srgan",
-        dataset="df2k_ost",
+        dataset="df2k_ost_small",
         batch_size=32,
         shuffle=True,
         g_optimizer="adamw",
@@ -293,10 +293,14 @@ def main():
         g_loss_function="srgan_generator_loss",
         d_loss_function="gan_discriminator_loss",
         epochs=30,
+        epoch_save=True,
+        epoch_save_period=1,
         real_label=0.95,
+        early_stopping=True,
+        early_stopping_monitor="train_loss",
     )
     GANConfig.save_config(config)
-    # config = GANConfig.load_config("srgan_df2k_ost")
+    # config = GANConfig.load_config("srgan_df2k_ost_small")
     pipeline = GANPipeline(config)
     pipeline.run()
 

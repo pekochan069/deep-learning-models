@@ -179,8 +179,15 @@ class SRGAN(BaseGANModel):
     def __init__(self, config: GANConfig):
         super(SRGAN, self).__init__(config)
 
-        image_width = 256
-        image_height = 256
+        if config.dataset == "df2k_ost":
+            image_width = 256
+            image_height = 256
+        elif config.dataset == "df2k_ost_small":
+            image_width = 96
+            image_height = 96
+        else:
+            image_width = 64
+            image_height = 64
 
         self.generator = Generator()
         self.discriminator = Discriminator(

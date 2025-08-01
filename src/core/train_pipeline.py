@@ -156,6 +156,9 @@ class GANPipeline(Pipeline):
         elif self.config.dataset == "df2k_ost":
             discriminator_input_size = (1, 3, 256, 256)
             generator_input_size = (1, 3, 64, 64)
+        elif self.config.dataset == "df2k_ost_small":
+            discriminator_input_size = (1, 3, 96, 96)
+            generator_input_size = (1, 3, 24, 24)
         else:
             discriminator_input_size = (1, 3, 64, 64)
             generator_input_size = (1, 3, 64, 64)

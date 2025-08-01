@@ -27,6 +27,8 @@ class Config(PydanticBaseModel):
     early_stopping_monitor: Literal["val_loss", "train_loss"] = "val_loss"
     early_stopping_patience: int = 5
     early_stopping_min_delta: float = 0.0
+    epoch_save: bool = False
+    epoch_save_period: int = 1
 
     @classmethod
     def save_config(cls, config: Self):

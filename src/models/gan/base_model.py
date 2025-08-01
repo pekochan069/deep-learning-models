@@ -63,9 +63,10 @@ class BaseGANModel(BaseModel):
     #     pass
 
     @override
-    def save(self):
+    def save(self, name: str | None = None):
         """Save the model."""
-        save_model(self, self.config.name)
+        name = name or self.config.name
+        save_model(self, name)
 
     @override
     def load(self):
@@ -252,6 +253,13 @@ class BaseGANModel(BaseModel):
                 self.logger.info(
                     f"Epoch {epoch + 1}/{self.config.epochs} finished, Train Loss:\n - G: {g_epoch_loss:.4f}\n - D: {d_epoch_loss:.4f}"
                 )
+
+            if (
+                self.config.epoch_save
+                and (epoch + 1) % self.config.epoch_save_period == 0
+            ):
+                self.save(f"{self.config.name}_epoch_{epoch + 1}")
+                self.logger.info(f"Model saved at epoch {epoch + 1}")
 
             if self.config.early_stopping:
                 if self.config.early_stopping_monitor == "val_loss":

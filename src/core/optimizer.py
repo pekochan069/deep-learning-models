@@ -1,3 +1,4 @@
+# pyright: reportUnannotatedClassAttribute=false
 from typing import Annotated, Literal
 import torch
 import torch.optim as optim
@@ -41,7 +42,7 @@ def get_optimizer(name: OptimizerName):
 
 class AdafactorParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adafactor"] = "adafactor"
+    param_type: Literal["adafactor"] = "adafactor"
     lr: float | torch.Tensor = 1e-2
     beta2_decay: float = -0.8
     eps: tuple[float | None, float] = (None, 1e-3)
@@ -53,7 +54,7 @@ class AdafactorParams(ParametersBase):
 
 class AdadeltaParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adadelta"] = "adadelta"
+    param_type: Literal["adadelta"] = "adadelta"
     lr: float | torch.Tensor = 1.0
     rho: float = 0.9
     eps: float = 1e-6
@@ -66,7 +67,7 @@ class AdadeltaParams(ParametersBase):
 
 class AdagradParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adagrad"] = "adagrad"
+    param_type: Literal["adagrad"] = "adagrad"
     r: float | torch.Tensor = 1e-2
     lr_decay: float = 0
     weight_decay: float = 0
@@ -80,7 +81,7 @@ class AdagradParams(ParametersBase):
 
 class AdamParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adam"] = "adam"
+    param_type: Literal["adam"] = "adam"
     lr: float | torch.Tensor = 1e-3
     betas: tuple[float | torch.Tensor, float | torch.Tensor] = (0.9, 0.999)
     eps: float = 1e-8
@@ -96,7 +97,7 @@ class AdamParams(ParametersBase):
 
 class AdamaxParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adamax"] = "adamax"
+    param_type: Literal["adamax"] = "adamax"
     lr: float | torch.Tensor = 2e-3
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
@@ -109,7 +110,7 @@ class AdamaxParams(ParametersBase):
 
 class AdamWParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["adamw"] = "adamw"
+    param_type: Literal["adamw"] = "adamw"
     lr: float | torch.Tensor = 1e-3
     betas: tuple[float | torch.Tensor, float | torch.Tensor] = (0.9, 0.999)
     eps: float = 1e-8
@@ -124,7 +125,7 @@ class AdamWParams(ParametersBase):
 
 class ASGDParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["asgd"] = "asgd"
+    param_type: Literal["asgd"] = "asgd"
     lr: float | torch.Tensor = 1e-2
     lambd: float = 1e-4
     alpha: float = 0.75
@@ -138,7 +139,7 @@ class ASGDParams(ParametersBase):
 
 class LBFGSParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["lbfgs"] = "lbfgs"
+    param_type: Literal["lbfgs"] = "lbfgs"
     lr: float | torch.Tensor = 1
     max_iter: int = 20
     max_eval: int | None = None
@@ -150,7 +151,7 @@ class LBFGSParams(ParametersBase):
 
 class NAdamParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["nadam"] = "nadam"
+    param_type: Literal["nadam"] = "nadam"
     lr: float | torch.Tensor = 2e-3
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
@@ -165,7 +166,7 @@ class NAdamParams(ParametersBase):
 
 class RAdamParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["radam"] = "radam"
+    param_type: Literal["radam"] = "radam"
     lr: float | torch.Tensor = 1e-3
     betas: tuple[float, float] = (0.9, 0.999)
     eps: float = 1e-8
@@ -179,7 +180,7 @@ class RAdamParams(ParametersBase):
 
 class RMSpropParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["rmsprop"] = "rmsprop"
+    param_type: Literal["rmsprop"] = "rmsprop"
     lr: float | torch.Tensor = 1e-2
     alpha: float = 0.99
     eps: float = 1e-8
@@ -194,7 +195,7 @@ class RMSpropParams(ParametersBase):
 
 class RpropParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["rprop"] = "rprop"
+    param_type: Literal["rprop"] = "rprop"
     lr: float | torch.Tensor = 1e-2
     etas: tuple[float, float] = (0.5, 1.2)
     step_sizes: tuple[float, float] = (1e-6, 50)
@@ -206,7 +207,7 @@ class RpropParams(ParametersBase):
 
 class SGDParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["sgd"] = "sgd"
+    param_type: Literal["sgd"] = "sgd"
     lr: float | torch.Tensor = 1e-3
     momentum: float = 0
     dampening: float = 0
@@ -220,7 +221,7 @@ class SGDParams(ParametersBase):
 
 class SparseAdamParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    _tag: Literal["sparse_adam"] = "sparse_adam"
+    param_type: Literal["sparse_adam"] = "sparse_adam"
     lr: float | torch.Tensor = 1e-3
     betas: tuple[float | torch.Tensor, float | torch.Tensor] = (0.9, 0.999)
     eps: float = 1e-8
@@ -242,5 +243,5 @@ OptimizerParams = Annotated[
     | RpropParams
     | SGDParams
     | SparseAdamParams,
-    Field(discriminator="_tag"),
+    Field(discriminator="param_type"),
 ]

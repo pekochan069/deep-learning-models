@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset  # pyright: ignore[reportMissingTypeStubs]
 from tqdm import tqdm
 
-from core.preprocess import bucket_crop_image
+from core.preprocess import bucket_crop_image, quad_crop_image
 
 from .names import DatasetName
 from core.config import Config
@@ -129,6 +129,8 @@ def get_dataset(
             return mini_imagenet(batch_size, shuffle, transform)
         case "df2k_ost":
             return get_df2k_ost(batch_size, shuffle, transform)
+        case "df2k_ost_small":
+            return get_df2k_ost_small(batch_size, shuffle, transform)
 
 
 def mnist(
@@ -414,6 +416,101 @@ def get_df2k_ost(
 
     train_dataset = UpscaleDataset("data/df2k/train", target_transform=transform)
     test_dataset = UpscaleDataset("data/df2k/test", target_transform=transform)
+
+    return TrainableDataset(
+        train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
+        test=DataLoader(test_dataset, batch_size=batch_size, shuffle=False),
+    )
+
+
+def get_df2k_ost_small(
+    batch_size: int,
+    shuffle: bool,
+    transform: Callable[[Any], torch.Tensor] | None = None,
+):
+    if transform is None:
+        logger.info("Using default transform for DF2K OST Small")
+        transform = transforms.ToTensor()
+    else:
+        logger.info("Using custom transform for DF2K OST Small")
+
+    zip_file = "data/df2k.zip"
+    raw_image_dir = "data/df2k/share/jywang/dataset/df2k_ost/GT"
+    processed_dir = "data/df2k_small"
+    train_dir = f"{processed_dir}/train"
+    test_dir = f"{processed_dir}/test"
+
+    if not os.path.exists(train_dir):
+        logger.info("DF2K OST Dataset not found.")
+
+        if not os.path.exists(zip_file):
+            logger.info("df2k.zip not found. Downloading...")
+            filename = hf_hub_download(
+                repo_id="Iceclear/DF2K-OST",
+                filename="df2k.zip",
+                repo_type="dataset",
+                local_dir="data",
+            )
+            logger.info(f"Downloaded df2k.zip to {filename}")
+        else:
+            logger.info("Found existing df2k.zip file. Skipping download.")
+
+        if not os.path.exists("data/df2k/share"):
+            logger.info("Extracting df2k.zip...")
+            with zipfile.ZipFile(zip_file, "r") as zip_ref:
+                zip_ref.extractall("data/df2k")
+            logger.info("df2k.zip extracted.")
+        else:
+            logger.info("df2k.zip already extracted. Skipping extraction.")
+
+        # preprocess
+
+        os.makedirs(train_dir, exist_ok=True)
+        os.makedirs(test_dir, exist_ok=True)
+
+        files = list(scan_files(raw_image_dir))
+        total_files = len(files)
+        train_size = int(0.8 * total_files)
+
+        current = 0
+
+        train_index = 1
+        test_index = 1
+
+        logger.info("Preprocessing DF2K OST Small dataset...")
+        for file in tqdm(files):
+            raw_image = cv2.imread(file, cv2.IMREAD_UNCHANGED)
+            image_list = quad_crop_image(raw_image, 96, 96)
+
+            if current < train_size:
+                for i, image in enumerate(image_list):
+                    result = cv2.imwrite(f"{train_dir}/image_{train_index}.png", image)
+
+                    if not result:
+                        logger.error(
+                            f"Failed to write image {i + 1} of {file} to train directory."
+                        )
+                    else:
+                        train_index += 1
+
+                current += 1
+            else:
+                for i, image in enumerate(image_list):
+                    result = cv2.imwrite(f"{test_dir}/image_{test_index}.png", image)
+
+                    if not result:
+                        logger.error(
+                            f"Failed to write image {i + 1} of {file} to test directory."
+                        )
+                    else:
+                        test_index += 1
+        logger.info("DF2K OST Small dataset preprocessed and saved.")
+        logger.info(f"Total images: Train - {train_index - 1}, Test - {test_index - 1}")
+
+        shutil.rmtree("data/df2k/share", ignore_errors=True)
+
+    train_dataset = UpscaleDataset(train_dir, target_transform=transform)
+    test_dataset = UpscaleDataset(test_dir, target_transform=transform)
 
     return TrainableDataset(
         train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),

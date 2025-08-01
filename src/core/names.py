@@ -9,6 +9,7 @@ DatasetName = Literal[
     "imagenet",
     "mini_imagenet",
     "df2k_ost",
+    "df2k_ost_small",
 ]
 CNNModelName = Literal[
     "example_cnn",
@@ -43,7 +44,11 @@ CNNModelName = Literal[
     "efficient_net_v1_b8",
     "efficient_net_v1_l2",
 ]
-GANModelName = Literal["gan", "srgan"]
+GANModelName = Literal[
+    "gan",
+    "srgan",
+    "esrgan",
+]
 LossFunctionName = Literal[
     "l1",
     "nll",
