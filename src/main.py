@@ -1,5 +1,8 @@
 import logging
 
+import torch
+import torchvision.transforms.v2 as transforms
+
 
 from core.config import GANConfig
 from core.logger import init_logger
@@ -272,9 +275,114 @@ def main():
     # )
     # pipeline.run()
 
+    # config = GANConfig(
+    #     name="srgan_df2k_ost_small",
+    #     model="srgan",
+    #     dataset="df2k_ost_small",
+    #     batch_size=32,
+    #     shuffle=True,
+    #     g_optimizer="adamw",
+    #     g_optimizer_params=AdamWParams(
+    #         lr=1e-4,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     d_optimizer="adamw",
+    #     d_optimizer_params=AdamWParams(
+    #         lr=5e-5,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     g_loss_function="srgan_generator_loss",
+    #     d_loss_function="gan_discriminator_loss",
+    #     epochs=2,
+    #     save_after_n_epoch=True,
+    #     save_after_n_epoch_period=1,
+    #     real_label=0.95,
+    #     early_stopping=True,
+    #     early_stopping_monitor="train_loss",
+    # )
+    # GANConfig.save_config(config)
+    # config = GANConfig.load_config("srgan_df2k_ost_small")
+
+    # config = GANConfig(
+    #     name="esrgan_df2k_ost_small",
+    #     model="esrgan",
+    #     model_params={
+    #         "beta": 0.2,
+    #         "rrdb_layers": 16,
+    #     },
+    #     dataset="df2k_ost_small",
+    #     batch_size=32,
+    #     shuffle=True,
+    #     g_optimizer="adamw",
+    #     g_optimizer_params=AdamWParams(
+    #         lr=1e-4,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     d_optimizer="adamw",
+    #     d_optimizer_params=AdamWParams(
+    #         lr=5e-5,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     g_loss_function="srgan_generator_loss",
+    #     d_loss_function="esrgan_discriminator_loss",
+    #     epochs=2,
+    #     epoch_save=True,
+    #     epoch_save_period=1,
+    #     real_label=0.95,
+    #     early_stopping=True,
+    #     early_stopping_monitor="train_loss",
+    # )
+    # GANConfig.save_config(config)
+    # config = GANConfig.load_config("esrgan_df2k_ost_small")
+
+    # config = GANConfig(
+    #     name="esrgan_plus_df2k_ost_small",
+    #     model="esrgan_plus",
+    #     model_params={
+    #         "beta": 0.2,
+    #         "rrdrb_layers": 16,
+    #     },
+    #     dataset="df2k_ost_small",
+    #     batch_size=32,
+    #     shuffle=True,
+    #     g_optimizer="adamw",
+    #     g_optimizer_params=AdamWParams(
+    #         lr=1e-4,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     d_optimizer="adamw",
+    #     d_optimizer_params=AdamWParams(
+    #         lr=5e-5,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     g_loss_function="srgan_generator_loss",
+    #     d_loss_function="esrgan_discriminator_loss",
+    #     epochs=2,
+    #     save_after_n_epoch=True,
+    #     save_after_n_epoch_period=1,
+    #     real_label=0.95,
+    #     early_stopping=True,
+    #     early_stopping_monitor="train_loss",
+    # )
+    # GANConfig.save_config(config)
+    # config = GANConfig.load_config("esrgan_plus_df2k_ost_small")
+
+    # pipeline = GANPipeline(config)
+    # pipeline.run()
+
     config = GANConfig(
-        name="srgan_df2k_ost_small",
-        model="srgan",
+        name="real_esrgan_df2k_ost_small",
+        model="real_esrgan",
+        model_params={
+            "beta": 0.2,
+            "rrdb_layers": 16,
+        },
         dataset="df2k_ost_small",
         batch_size=32,
         shuffle=True,
@@ -291,17 +399,25 @@ def main():
             weight_decay=1e-2,
         ),
         g_loss_function="srgan_generator_loss",
-        d_loss_function="gan_discriminator_loss",
-        epochs=30,
-        epoch_save=True,
-        epoch_save_period=1,
+        d_loss_function="esrgan_discriminator_loss",
+        epochs=2,
+        save_after_n_epoch=True,
+        save_after_n_epoch_period=1,
         real_label=0.95,
         early_stopping=True,
         early_stopping_monitor="train_loss",
+        pretrain=True,
+        pretrain_epochs=5,
     )
     GANConfig.save_config(config)
-    # config = GANConfig.load_config("srgan_df2k_ost_small")
-    pipeline = GANPipeline(config)
+    # config = GANConfig.load_config("real_esrgan_df2k_ost_small")
+
+    pipeline = GANPipeline(
+        config,
+        input_transform=transforms.Compose(
+            [transforms.ToImage(), transforms.ToDtype(torch.float32, scale=True)]
+        ),
+    )
     pipeline.run()
 
 

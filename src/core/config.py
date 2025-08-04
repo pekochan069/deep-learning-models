@@ -4,7 +4,7 @@ import os
 from typing import Any, Literal, Self
 from pydantic import BaseModel as PydanticBaseModel
 
-from core.optimizer import OptimizerParams
+from core.optimizer import AdamWParams, OptimizerParams
 
 from .names import (
     DatasetName,
@@ -27,8 +27,8 @@ class Config(PydanticBaseModel):
     early_stopping_monitor: Literal["val_loss", "train_loss"] = "val_loss"
     early_stopping_patience: int = 5
     early_stopping_min_delta: float = 0.0
-    epoch_save: bool = False
-    epoch_save_period: int = 1
+    save_after_n_epoch: bool = False
+    save_after_n_epoch_period: int = 1
 
     @classmethod
     def save_config(cls, config: Self):
@@ -70,3 +70,10 @@ class GANConfig(Config):
 
     fake_label: float = 0.0
     real_label: float = 1.0
+
+    pretrain: bool = False
+    pretrain_epochs: int = 5
+    pretrain_batch_size: int = 32
+    pretrain_optimizer: OptimizerName = "adamw"
+    pretrain_optimizer_params: OptimizerParams = AdamWParams(lr=1e-4)
+    pretrain_loss_function: LossFunctionName = "l1"

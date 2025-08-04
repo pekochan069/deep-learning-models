@@ -7,8 +7,9 @@ from typing import Any, Callable, final, override
 
 import torch
 import cv2
+import torchvision.transforms.v2 as transforms  # pyright: ignore[reportMissingTypeStubs]
 from huggingface_hub import hf_hub_download
-from torchvision import datasets, transforms  # pyright: ignore[reportMissingTypeStubs]
+from torchvision import datasets  # pyright: ignore[reportMissingTypeStubs]
 from torch.utils.data import random_split, Dataset as TorchDataset
 from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset  # pyright: ignore[reportMissingTypeStubs]
@@ -72,18 +73,9 @@ class UpscaleDataset(TorchDataset[tuple[torch.Tensor, torch.Tensor]]):
     def __init__(
         self,
         path: str,
-        target_transform: Callable[[Any], torch.Tensor] | None = None,
-        z_transform: Callable[[Any], torch.Tensor] | None = None,
+        target_transform: Callable[[Any], torch.Tensor],
+        z_transform: Callable[[Any], torch.Tensor],
     ):
-        if target_transform is None:
-            target_transform = transforms.Compose(
-                [
-                    transforms.ToTensor(),
-                    transforms.Normalize((0.5,), (0.5,)),
-                ]
-            )
-        if z_transform is None:
-            z_transform = transforms.ToTensor()
         self.path = path
         self.target_transform = target_transform
         self.z_transform = z_transform
@@ -96,21 +88,28 @@ class UpscaleDataset(TorchDataset[tuple[torch.Tensor, torch.Tensor]]):
     @override
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
         target = cv2.imread(self.data[index], cv2.IMREAD_UNCHANGED)
-        input = cv2.resize(
-            target,
-            (target.shape[1] // 4, target.shape[0] // 4),
-            interpolation=cv2.INTER_CUBIC,
-        )
 
-        input = self.z_transform(input)
+        input = self.z_transform(target)
         target = self.target_transform(target)
 
         return input, target
 
 
 def get_dataset(
-    config: Config, transform: Callable[[Any], torch.Tensor] | None = None
+    config: Config,
+    transform: Callable[[Any], torch.Tensor] | None = None,
+    input_transform: Callable[[Any], torch.Tensor] | None = None,
 ) -> TrainableDataset:
+    """_summary_
+
+    Args:
+        config (Config): _description_
+        transform (Callable[[Any], torch.Tensor] | None, optional): _description_. Defaults to None.
+        input_transform (Callable[[Any], torch.Tensor] | None, optional): Only for UpscaleDataset (df2k_ost, df2k_ost_small). Defaults to None.
+
+    Returns:
+        TrainableDataset: _description_
+    """
     name = config.dataset
     batch_size = config.batch_size
     shuffle = config.shuffle
@@ -128,9 +127,9 @@ def get_dataset(
         case "mini_imagenet":
             return mini_imagenet(batch_size, shuffle, transform)
         case "df2k_ost":
-            return get_df2k_ost(batch_size, shuffle, transform)
+            return get_df2k_ost(batch_size, shuffle, transform, input_transform)
         case "df2k_ost_small":
-            return get_df2k_ost_small(batch_size, shuffle, transform)
+            return get_df2k_ost_small(batch_size, shuffle, transform, input_transform)
 
 
 def mnist(
@@ -140,7 +139,12 @@ def mnist(
 ):
     if transform is None:
         logger.info("Using default transform for MNIST")
-        transform = transforms.ToTensor()
+        transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        )
     else:
         logger.info("Using custom transform for MNIST")
 
@@ -160,7 +164,12 @@ def cifar10(
 ):
     if transform is None:
         logger.info("Using default transform for CIFAR-10")
-        transform = transforms.ToTensor()
+        transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        )
     else:
         logger.info("Using custom transform for CIFAR-10")
 
@@ -184,7 +193,12 @@ def cifar100(
 ):
     if transform is None:
         logger.info("Using default transform for CIFAR-100")
-        transform = transforms.ToTensor()
+        transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        )
     else:
         logger.info("Using custom transform for CIFAR-100")
 
@@ -204,7 +218,12 @@ def fashion_mnist(
 ):
     if transform is None:
         logger.info("Using default transform for Fashion MNIST")
-        transform = transforms.ToTensor()
+        transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        )
     else:
         logger.info("Using custom transform for Fashion MNIST")
 
@@ -332,13 +351,21 @@ def get_div2k(
 def get_df2k_ost(
     batch_size: int,
     shuffle: bool,
-    transform: Callable[[Any], torch.Tensor] | None = None,
+    target_transform: Callable[[Any], torch.Tensor] | None = None,
+    input_transform: Callable[[Any], torch.Tensor] | None = None,
 ):
-    if transform is None:
-        logger.info("Using default transform for DF2K OST")
-        transform = transforms.ToTensor()
+    if target_transform is None:
+        logger.info("Using default target transform for DF2K OST")
+        target_transform = transforms.Compose(
+            [transforms.ToImage(), transforms.ToDtype(torch.float32, scale=True)]
+        )
     else:
-        logger.info("Using custom transform for DF2K OST")
+        logger.info("Using custom target transform for DF2K OST")
+    if input_transform is None:
+        logger.info("Using default z transform for DF2K OST Z")
+        input_transform = transforms.ToTensor()
+    else:
+        logger.info("Using custom ztransform for DF2K OST Z")
 
     if not os.path.exists("data/df2k/train"):
         logger.info("DF2K OST Dataset not found.")
@@ -414,8 +441,14 @@ def get_df2k_ost(
 
         shutil.rmtree("data/df2k/share", ignore_errors=True)
 
-    train_dataset = UpscaleDataset("data/df2k/train", target_transform=transform)
-    test_dataset = UpscaleDataset("data/df2k/test", target_transform=transform)
+    train_dataset = UpscaleDataset(
+        "data/df2k/train",
+        target_transform=target_transform,
+        z_transform=input_transform,
+    )
+    test_dataset = UpscaleDataset(
+        "data/df2k/test", target_transform=target_transform, z_transform=input_transform
+    )
 
     return TrainableDataset(
         train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
@@ -426,13 +459,27 @@ def get_df2k_ost(
 def get_df2k_ost_small(
     batch_size: int,
     shuffle: bool,
-    transform: Callable[[Any], torch.Tensor] | None = None,
+    target_transform: Callable[[Any], torch.Tensor] | None = None,
+    input_transform: Callable[[Any], torch.Tensor] | None = None,
 ):
-    if transform is None:
-        logger.info("Using default transform for DF2K OST Small")
-        transform = transforms.ToTensor()
+    if target_transform is None:
+        logger.info("Using default target transform for DF2K OST Small")
+        target_transform = transforms.Compose(
+            [transforms.ToImage(), transforms.ToDtype(torch.float32, scale=True)]
+        )
     else:
-        logger.info("Using custom transform for DF2K OST Small")
+        logger.info("Using custom target transform for DF2K OST Small")
+    if input_transform is None:
+        logger.info("Using default z transform for DF2K OST Small Z")
+        input_transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+                transforms.Resize((24, 24)),
+            ]
+        )
+    else:
+        logger.info("Using custom z transform for DF2K OST Small Z")
 
     zip_file = "data/df2k.zip"
     raw_image_dir = "data/df2k/share/jywang/dataset/df2k_ost/GT"
@@ -509,8 +556,12 @@ def get_df2k_ost_small(
 
         shutil.rmtree("data/df2k/share", ignore_errors=True)
 
-    train_dataset = UpscaleDataset(train_dir, target_transform=transform)
-    test_dataset = UpscaleDataset(test_dir, target_transform=transform)
+    train_dataset = UpscaleDataset(
+        train_dir, target_transform=target_transform, z_transform=input_transform
+    )
+    test_dataset = UpscaleDataset(
+        test_dir, target_transform=target_transform, z_transform=input_transform
+    )
 
     return TrainableDataset(
         train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),

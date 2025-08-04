@@ -1,7 +1,6 @@
 import time
 from typing import Any, final, override
 import matplotlib.pyplot as plt
-from numpy.random import f
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -139,8 +138,8 @@ class BaseCNNModel(BaseModel):
                 )
 
             if (
-                self.config.epoch_save
-                and (epoch + 1) % self.config.epoch_save_period == 0
+                self.config.save_after_n_epoch
+                and (epoch + 1) % self.config.save_after_n_epoch_period == 0
             ):
                 self.save(f"{self.config.name}_epoch_{epoch + 1}")
                 self.logger.info(f"Model saved at epoch {epoch + 1}")

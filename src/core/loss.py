@@ -2,10 +2,10 @@ from typing import Any
 
 import torch.nn as nn
 
-
 from .names import LossFunctionName
 from .loss_functions.gan_discriminator_loss import GANDiscriminatorLoss
 from .loss_functions.srgan_generator_loss import SRGANGeneratorLoss
+from .loss_functions.esrgan_discriminator_loss import ESRGANDiscriminatorLoss
 
 
 def get_loss_function(name: LossFunctionName, params: dict[str, Any] | None = None):
@@ -59,3 +59,5 @@ def get_loss_function(name: LossFunctionName, params: dict[str, Any] | None = No
             return GANDiscriminatorLoss(**params)
         case "srgan_generator_loss":
             return SRGANGeneratorLoss(**params)
+        case "esrgan_discriminator_loss":
+            return ESRGANDiscriminatorLoss(**params)

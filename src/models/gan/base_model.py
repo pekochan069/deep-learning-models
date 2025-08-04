@@ -79,6 +79,77 @@ class BaseGANModel(BaseModel):
         _ = self.to(self.device)
         self.logger.info(f"Model {self.config.name} loaded successfully.")
 
+    def pretrain_epoch(
+        self,
+        train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        optimizer: optim.Optimizer,
+        loss_function: nn.Module,
+    ) -> float:
+        _ = self.generator.train()
+        _ = self.generator.to(self.device)
+
+        epoch_loss = 0.0
+
+        for batch in tqdm(train_loader, desc="Pretraining"):
+            inputs, targets = batch
+            inputs = inputs.to(self.device)
+            targets = targets.to(self.device)
+
+            z = torch.randn(inputs.size(0), 100, device=self.device)
+
+            optimizer.zero_grad()
+
+            g_z = self.generator(z)
+
+            g_loss = loss_function(g_z, targets)
+
+            g_loss.backward()
+            optimizer.step()
+
+            epoch_loss += g_loss.item()
+
+        epoch_loss /= len(train_loader)
+
+        _ = self.generator.train(False)
+
+        return epoch_loss
+
+    def pretrain(self, train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]):
+        """Pretrain the generator."""
+        self.logger.info(
+            f"Pretraining {self.config.model} on {self.config.dataset} dataset"
+        )
+        start = time.time()
+
+        _ = self.generator.to(self.device)
+
+        optimizer = get_optimizer(self.config.pretrain_optimizer)(
+            self.generator.parameters(),
+            **self.config.pretrain_optimizer_params.to_kwargs(),
+        )
+        loss_function = get_loss_function(self.config.pretrain_loss_function).to(
+            self.device
+        )
+
+        for epoch in range(self.config.pretrain_epochs):
+            self.logger.info(
+                f"Pretraining epoch {epoch + 1}/{self.config.pretrain_epochs}"
+            )
+
+            epoch_loss = self.pretrain_epoch(train_loader, optimizer, loss_function)
+            self.history.train_g_loss.append(epoch_loss)
+
+            self.logger.info(
+                f"Epoch {epoch + 1}/{self.config.pretrain_epochs} finished, Loss: {epoch_loss:.4f}"
+            )
+
+            if (epoch + 1) % self.config.save_after_n_epoch_period == 0:
+                self.save(f"{self.config.name}_pretrained_epoch_{epoch + 1}")
+                self.logger.info(f"Model saved at epoch {epoch + 1}")
+
+        end = time.time()
+        self.logger.info(f"Pretraining complete. Time taken: {end - start:.2f} seconds")
+
     @override
     def train_epoch(
         self,
@@ -255,8 +326,8 @@ class BaseGANModel(BaseModel):
                 )
 
             if (
-                self.config.epoch_save
-                and (epoch + 1) % self.config.epoch_save_period == 0
+                self.config.save_after_n_epoch
+                and (epoch + 1) % self.config.save_after_n_epoch_period == 0
             ):
                 self.save(f"{self.config.name}_epoch_{epoch + 1}")
                 self.logger.info(f"Model saved at epoch {epoch + 1}")

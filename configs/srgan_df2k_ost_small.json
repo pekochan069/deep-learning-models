@@ -3,13 +3,13 @@
     "dataset": "df2k_ost_small",
     "batch_size": 32,
     "shuffle": true,
-    "epochs": 30,
+    "epochs": 2,
     "early_stopping": true,
     "early_stopping_monitor": "train_loss",
     "early_stopping_patience": 5,
     "early_stopping_min_delta": 0.0,
-    "epoch_save": true,
-    "epoch_save_period": 1,
+    "save_after_n_epoch": true,
+    "save_after_n_epoch_period": 1,
     "model": "srgan",
     "model_params": {},
     "g_optimizer": "adamw",
@@ -45,5 +45,24 @@
     "g_loss_function": "srgan_generator_loss",
     "d_loss_function": "gan_discriminator_loss",
     "fake_label": 0.0,
-    "real_label": 0.95
+    "real_label": 0.95,
+    "pretrain": false,
+    "pretrain_epochs": 5,
+    "pretrain_batch_size": 32,
+    "pretrain_optimizer": "adamw",
+    "pretrain_optimizer_params": {
+        "param_type": "adamw",
+        "lr": 0.0001,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
+    },
+    "pretrain_loss_function": "l1"
 }

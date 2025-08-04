@@ -1,0 +1,52 @@
+{
+    "name": "esrgan_df2k_ost_small",
+    "dataset": "df2k_ost_small",
+    "batch_size": 32,
+    "shuffle": true,
+    "epochs": 2,
+    "early_stopping": true,
+    "early_stopping_monitor": "train_loss",
+    "early_stopping_patience": 5,
+    "early_stopping_min_delta": 0.0,
+    "epoch_save": true,
+    "epoch_save_period": 1,
+    "model": "esrgan",
+    "model_params": {
+        "beta": 0.5,
+        "rrdb_layers": 16
+    },
+    "g_optimizer": "adamw",
+    "g_optimizer_params": {
+        "param_type": "adamw",
+        "lr": 0.0001,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
+    },
+    "d_optimizer": "adamw",
+    "d_optimizer_params": {
+        "param_type": "adamw",
+        "lr": 5e-05,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
+    },
+    "g_loss_function": "srgan_generator_loss",
+    "d_loss_function": "esrgan_discriminator_loss",
+    "fake_label": 0.0,
+    "real_label": 0.95
+}

@@ -7,7 +7,6 @@ import torch
 
 from core.config import CNNConfig, GANConfig
 from core.dataset import TrainableDataset, get_dataset
-from core.logger import init_logger
 from models.cnn import get_cnn_model
 from models.cnn.base_model import BaseCNNModel
 from models.gan import get_gan_model
@@ -59,12 +58,11 @@ class CNNPipeline(Pipeline):
     @override
     def train(self):
         """Execute the complete training pipeline."""
-        init_logger("INFO")
 
         self.logger.info(f"Starting training pipeline for {self.config.name}")
         self.logger.info(f"Dataset: {self.config.dataset}")
-        self.logger.info(f"Train dataset size: {len(self.dataset.train)}")
         self.logger.info(f"Train data shape: {self.dataset.train.dataset[0][0].shape}")
+        self.logger.info(f"Training Steps per Epoch: {len(self.dataset.train)}")
         self.logger.info(
             f"Training Steps: {len(self.dataset.train) * self.config.epochs}"
         )
@@ -124,21 +122,39 @@ class GANPipeline(Pipeline):
     def __init__(
         self,
         config: GANConfig,
-        dataset_transform: Callable[[Any], torch.Tensor] | None = None,
+        target_transform: Callable[[Any], torch.Tensor] | None = None,
+        input_transform: Callable[[Any], torch.Tensor] | None = None,
     ):
         super(GANPipeline, self).__init__(logger_name="GANPipeline")
         self.config = config
         self.model = get_gan_model(self.config)
-        self.dataset = get_dataset(self.config, transform=dataset_transform)
+        self.dataset = get_dataset(
+            self.config, transform=target_transform, input_transform=input_transform
+        )
+
+    def pretrain(self):
+        self.logger.info(f"Starting pre-training for GAN model {self.config.name}")
+        self.logger.info(f"Pretrain Dataset: {self.config.dataset}")
+        self.logger.info(
+            f"Pretrain data shape: {self.dataset.train.dataset[0][0].shape}"
+        )
+        self.logger.info(f"Pretrain Steps per Epoch: {len(self.dataset.train)}")
+        self.logger.info(
+            f"Pretrain Steps: {len(self.dataset.train) * self.config.pretrain_epochs}"
+        )
+
+        self.model.fit(self.dataset.train)
+
+        self.logger.info(f"Pre-training completed for GAN model {self.config.name}")
 
     @override
     def train(self):
         """Execute the complete GAN training pipeline."""
-        init_logger("INFO")
 
         self.logger.info(f"Starting GAN training pipeline for {self.config.name}")
         self.logger.info(f"Dataset: {self.config.dataset}")
-        self.logger.info(f"Train dataset size: {len(self.dataset.train)}")
+        self.logger.info(f"Train data shape: {self.dataset.train.dataset[0][0].shape}")
+        self.logger.info(f"Training Steps per Epoch: {len(self.dataset.train)}")
         self.logger.info(
             f"Training Steps: {len(self.dataset.train) * self.config.epochs}"
         )
@@ -196,6 +212,8 @@ class GANPipeline(Pipeline):
     @override
     def run(self):
         """Run the complete GAN pipeline: train and evaluate."""
+        if self.config.pretrain:
+            self.pretrain()
         self.train()
         self.evaluate()
         self.logger.info(f"Full GAN pipeline completed for {self.config.name}")

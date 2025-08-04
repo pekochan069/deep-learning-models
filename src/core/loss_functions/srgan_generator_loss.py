@@ -12,8 +12,6 @@ class VGGFeatureExtractor(nn.Module):
     def __init__(self, layer_name_list: list[str]):
         super(VGGFeatureExtractor, self).__init__()
 
-        layer_name_list = ["relu1_1", "relu2_1", "relu3_1", "relu4_1", "relu5_1"]
-
         # 사전 훈련된 VGG19 모델 로드
         # 중요: weights 파라미터로 사전 훈련된 가중치 사용을 명시
         vgg19 = models.vgg19(weights=models.VGG19_Weights.IMAGENET1K_V1)
@@ -113,7 +111,7 @@ class ContentLoss(nn.Module):
         super(ContentLoss, self).__init__()
 
         self.feature_extractor = VGGFeatureExtractor(
-            layer_name_list=["relu4_1", "relu5_1"]
+            layer_name_list=["relu2_2", "relu5_4"]
         )
         self.mse_loss = nn.MSELoss()
 
@@ -164,6 +162,6 @@ class SRGANGeneratorLoss(nn.Module):
     def forward(
         self, x: torch.Tensor, g_z: torch.Tensor, d_g_z: torch.Tensor
     ) -> torch.Tensor:
-        return 0.006 * self.content_loss(x, g_z) + 1e-3 * self.adversarial_loss(
+        return self.content_loss(x, g_z) + 1e-3 * self.adversarial_loss(
             d_g_z, torch.ones_like(d_g_z)
         )

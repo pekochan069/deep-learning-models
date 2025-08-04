@@ -48,6 +48,8 @@ GANModelName = Literal[
     "gan",
     "srgan",
     "esrgan",
+    "esrgan_plus",
+    "real_esrgan",
 ]
 LossFunctionName = Literal[
     "l1",
@@ -73,6 +75,7 @@ LossFunctionName = Literal[
     "ctc",
     "gan_discriminator_loss",
     "srgan_generator_loss",
+    "esrgan_discriminator_loss",
 ]
 OptimizerName = Literal[
     "adafactor",

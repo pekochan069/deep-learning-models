@@ -1,8 +1,10 @@
 from typing import final, override
 
+import cv2
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchvision.transforms.v2 as transforms  # pyright: ignore[reportMissingTypeStubs]
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -213,6 +215,8 @@ class SRGAN(BaseGANModel):
             z = z.to(self.device)
             targets = targets.to(self.device)
 
+            print(z.shape, targets.shape)
+
             #######################
             # Train Discriminator #
             #######################
@@ -251,24 +255,29 @@ class SRGAN(BaseGANModel):
 
     @override
     def predict(self, data_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]):
-        _ = self.discriminator.eval()
         _ = self.generator.eval()
 
         with torch.no_grad():
-            z = torch.randn(128, 100, device=self.device)
-            generated_images = self.generator(z)
-            generated_images = generated_images.view(-1, 1, 28, 28)
+            batch = next(iter(data_loader))
+            z, targets = batch
 
-        images = generated_images.cpu()
-        # show images using matplotlib
-        grid_size = int(images.size(0) ** 0.5)
-        fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
-        for i in range(grid_size):
-            for j in range(grid_size):
-                idx = i * grid_size + j
-                if idx < images.size(0):
-                    axes[i, j].imshow(images[idx].permute(1, 2, 0).numpy(), cmap="gray")
-                axes[i, j].axis("off")
+            g_z = self.generator(z.to(self.device)).view(-1, 3, 96, 96)
+            g_z = g_z.clamp(0, 1)  # Ensure pixel values are in [0, 1]
+            g_z = g_z * 255.0  # Scale to [0, 255]
+            g_z = g_z.byte()  # Convert to byte format
+
+            generated_images = g_z.cpu()
+
+        # show all generated_images and targets
+        fig, axes = plt.subplots(2, 8, figsize=(16, 4))
+        for i in range(8):
+            axes[0, i].imshow(transforms.ToPILImage()(targets[i].cpu()), aspect="auto")
+            axes[0, i].axis("off")
+            axes[1, i].imshow(
+                transforms.ToPILImage()(generated_images[i]), aspect="auto"
+            )
+            axes[1, i].axis("off")
+        axes[0, 0].set_title("Original")
+        axes[1, 0].set_title("Generated")
         plt.tight_layout()
-        plt.savefig(f"images/{self.config.name}_generated_images.png")
         plt.show()
