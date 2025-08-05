@@ -143,7 +143,7 @@ class GANPipeline(Pipeline):
             f"Pretrain Steps: {len(self.dataset.train) * self.config.pretrain_epochs}"
         )
 
-        self.model.fit(self.dataset.train)
+        self.model.pretrain(self.dataset.train)
 
         self.logger.info(f"Pre-training completed for GAN model {self.config.name}")
 
