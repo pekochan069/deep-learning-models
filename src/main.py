@@ -9,11 +9,13 @@ from core.logger import init_logger
 from core.optimizer import AdamWParams
 from core.train_pipeline import GANPipeline
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("main")
 
 
 def main():
     init_logger("INFO")
+
+    logger.info("Starting Deep Learning Models")
 
     # config = CNNConfig(
     #     name="example_cnn",
@@ -382,9 +384,10 @@ def main():
         model_params={
             "beta": 0.2,
             "rrdb_layers": 16,
+            "image_size": 48,
         },
         dataset="df2k_ost_small",
-        batch_size=32,
+        batch_size=64,
         shuffle=True,
         g_optimizer="adamw",
         g_optimizer_params=AdamWParams(
@@ -414,8 +417,19 @@ def main():
 
     pipeline = GANPipeline(
         config,
+        target_transform=transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.Resize((48, 48)),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        ),
         input_transform=transforms.Compose(
-            [transforms.ToImage(), transforms.ToDtype(torch.float32, scale=True)]
+            [
+                transforms.ToImage(),
+                transforms.Resize((48, 48)),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
         ),
     )
     pipeline.run()

@@ -21,7 +21,7 @@ from .names import DatasetName
 from core.config import Config
 from core.fs import scan_files
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Dataset")
 
 
 def get_num_classes(dataset_name: DatasetName) -> int:

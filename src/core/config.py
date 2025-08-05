@@ -14,7 +14,7 @@ from .names import (
     OptimizerName,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Config")
 
 
 class Config(PydanticBaseModel):
