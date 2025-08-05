@@ -67,6 +67,6 @@ class BaseModel(ABC, nn.Module):
         pass
 
     @abstractmethod
-    def plot_history(self, show: bool = True, save: bool = True):
+    def plot_history(self, show: bool, save: bool):
         """Plot the training history."""
         pass

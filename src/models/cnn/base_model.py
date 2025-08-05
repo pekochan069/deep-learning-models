@@ -219,7 +219,7 @@ class BaseCNNModel(BaseModel):
         _ = summary(self, input_size=input_size)
 
     @override
-    def plot_history(self, show: bool = True, save: bool = True):
+    def plot_history(self, show: bool, save: bool):
         _ = plt.plot(
             range(1, len(self.history.train_loss) + 1),
             self.history.train_loss,

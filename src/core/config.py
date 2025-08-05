@@ -29,6 +29,8 @@ class Config(PydanticBaseModel):
     early_stopping_min_delta: float = 0.0
     save_after_n_epoch: bool = False
     save_after_n_epoch_period: int = 1
+    show_plot: bool = True
+    save_plot: bool = True
 
     @classmethod
     def save_config(cls, config: Self):
@@ -79,3 +81,5 @@ class GANConfig(Config):
     pretrain_loss_function: LossFunctionName = "l1"
     save_pretrained: bool = True
     load_pretrained: bool = False
+    show_pretrained_plot: bool = False
+    save_pretrained_plot: bool = True

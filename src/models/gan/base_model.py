@@ -8,6 +8,8 @@ from torchinfo import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from models.cnn.base_model import History
+
 from ..base_model import BaseModel
 from core.config import GANConfig
 from core.loss import get_loss_function
@@ -32,6 +34,7 @@ class GANHistory:
 class BaseGANModel(BaseModel):
     config: GANConfig
     history: GANHistory
+    pretrain_history: History
     generator: nn.Module
     discriminator: nn.Module
 
@@ -39,6 +42,7 @@ class BaseGANModel(BaseModel):
         super(BaseGANModel, self).__init__("GAN")
         self.config = config
         self.history = GANHistory()
+        self.pretrain_history = History()
 
     # @abstractmethod
     # def train_epoch(
@@ -77,7 +81,7 @@ class BaseGANModel(BaseModel):
         save_model(self.generator, name)
 
     def save_pretrained(self):
-        self.save_generator(f"{self.config.name}_pretrained_generator")
+        self.save_generator(f"{self.config.name}_pretrained")
 
     @override
     def load(self):
@@ -105,19 +109,16 @@ class BaseGANModel(BaseModel):
         loaded_model = load_model(self.generator, name)
         if loaded_model is None:
             self.logger.error(f"Generator {name} not found.")
-            return
+            return False
         _ = self.generator.load_state_dict(loaded_model.state_dict())
         _ = self.generator.to(self.device)
         self.logger.info(f"Generator {name} loaded successfully.")
+        return True
 
     def load_pretrained(self):
         """Load the pretrained generator."""
         self.logger.info(f"Loading pretrained generator for {self.config.name}")
-        self.load_generator(f"{self.config.name}_pretrained_generator")
-        if not self.config.save_pretrained:
-            self.logger.warning(
-                "Pretrained generator is loaded but save_pretrained is set to False."
-            )
+        return self.load_generator(f"{self.config.name}_pretrained")
 
     def pretrain_epoch(
         self,
@@ -177,14 +178,13 @@ class BaseGANModel(BaseModel):
             )
 
             epoch_loss = self.pretrain_epoch(train_loader, optimizer, loss_function)
-            self.history.train_g_loss.append(epoch_loss)
+            self.pretrain_history.train_loss.append(epoch_loss)
 
             self.logger.info(
                 f"Epoch {epoch + 1}/{self.config.pretrain_epochs} finished, Loss: {epoch_loss:.4f}"
             )
 
             if (epoch + 1) % self.config.save_after_n_epoch_period == 0:
-                self.save(f"{self.config.name}_pretrained_epoch_{epoch + 1}")
                 self.logger.info(f"Model saved at epoch {epoch + 1}")
 
         end = time.time()
@@ -454,8 +454,27 @@ class BaseGANModel(BaseModel):
         _ = summary(self.generator, input_size=generator_input_size)
         _ = summary(self.discriminator, input_size=discriminator_input_size)
 
+    def plot_pretrain_history(self, show: bool, save: bool):
+        _ = plt.plot(
+            range(1, len(self.pretrain_history.train_loss) + 1),
+            self.pretrain_history.train_loss,
+            marker="o",
+            label="Train Loss",
+        )
+        _ = plt.title("Pretraining Loss")
+        _ = plt.xlabel("Epoch")
+        _ = plt.ylabel("Loss")
+        _ = plt.grid()
+        _ = plt.legend()
+
+        if save:
+            plt.savefig(f"images/{self.config.name}_pretrain_loss.png")
+
+        if show:
+            plt.show()
+
     @override
-    def plot_history(self, show: bool = True, save: bool = True):
+    def plot_history(self, show: bool, save: bool):
         _ = plt.plot(
             range(1, len(self.history.train_g_loss) + 1),
             self.history.train_g_loss,

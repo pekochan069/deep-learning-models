@@ -379,7 +379,7 @@ def main():
     # pipeline.run()
 
     config = GANConfig(
-        name="real_esrgan_df2k_ost_small",
+        name="real_esrgan_df2k_ost_extra_small",
         model="real_esrgan",
         model_params={
             "beta": 0.2,
@@ -403,7 +403,7 @@ def main():
         ),
         g_loss_function="srgan_generator_loss",
         d_loss_function="esrgan_discriminator_loss",
-        epochs=2,
+        epochs=50,
         save_after_n_epoch=True,
         save_after_n_epoch_period=1,
         real_label=0.95,
@@ -411,6 +411,8 @@ def main():
         early_stopping_monitor="train_loss",
         pretrain=True,
         pretrain_epochs=5,
+        save_pretrained=True,
+        load_pretrained=True,
     )
     GANConfig.save_config(config)
     # config = GANConfig.load_config("real_esrgan_df2k_ost_small")

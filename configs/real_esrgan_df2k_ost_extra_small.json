@@ -1,5 +1,5 @@
 {
-    "name": "real_esrgan_df2k_ost_small",
+    "name": "real_esrgan_df2k_ost_extra_small",
     "dataset": "df2k_ost_small",
     "batch_size": 64,
     "shuffle": true,

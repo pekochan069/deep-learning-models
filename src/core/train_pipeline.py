@@ -81,7 +81,7 @@ class CNNPipeline(Pipeline):
         self.model.fit(self.dataset.train, self.dataset.val)
 
         # Plot training history
-        self.model.plot_history()
+        self.model.plot_history(self.config.show_plot, self.config.save_plot)
 
         # Save the trained model
         self.model.save()
@@ -145,6 +145,10 @@ class GANPipeline(Pipeline):
 
         self.model.pretrain(self.dataset.train)
 
+        self.model.plot_pretrain_history(
+            self.config.show_pretrained_plot, self.config.save_pretrained_plot
+        )
+
         if self.config.save_pretrained:
             self.model.save_pretrained()
 
@@ -187,7 +191,7 @@ class GANPipeline(Pipeline):
         self.model.fit(self.dataset.train, self.dataset.val)
 
         # Plot training history
-        self.model.plot_history()
+        self.model.plot_history(self.config.show_plot, self.config.save_plot)
 
         # Save the trained model
         self.model.save()
@@ -216,9 +220,14 @@ class GANPipeline(Pipeline):
     def run(self):
         """Run the complete GAN pipeline: train and evaluate."""
         if self.config.load_pretrained:
-            self.model.load_pretrained()
-        if self.config.pretrain:
-            self.pretrain()
+            pretrained_loaded = self.model.load_pretrained()
+
+            if not pretrained_loaded and self.config.pretrain:
+                self.logger.info("Pretrained model not found, starting pre-training...")
+                self.pretrain()
+        else:
+            if self.config.pretrain:
+                self.pretrain()
         self.train()
         self.evaluate()
         self.logger.info(f"Full GAN pipeline completed for {self.config.name}")
