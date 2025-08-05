@@ -72,9 +72,10 @@ class Discriminator(nn.Module):
         self.skip_connection = skip_connection
 
         self.block1 = DiscriminatorBlock(in_channels, feat, 3, 1, False)
+
         self.block2 = DiscriminatorBlock(feat, feat * 2, 4, 2)
         self.block3 = DiscriminatorBlock(feat * 2, feat * 4, 4, 2)
-        self.block4 = DiscriminatorBlock(feat * 4, feat * 8, 3, 1)
+        self.block4 = DiscriminatorBlock(feat * 4, feat * 8, 3, 2)
 
         self.block5 = DiscriminatorBlock(feat * 8, feat * 4, 3, 1)
         self.block6 = DiscriminatorBlock(feat * 4, feat * 2, 3, 1)
@@ -87,6 +88,7 @@ class Discriminator(nn.Module):
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         o1 = self.block1(x)
+
         o2 = self.block2(o1)
         o3 = self.block3(o2)
         o = self.block4(o3)
@@ -338,11 +340,7 @@ def bivariate_generalized_gaussian(
 ):
     """https://github.com/XPixelGroup/BasicSR/blob/master/basicsr/data/degradations.py"""
     if grid is None:
-        grid, _ = torch.meshgrid(
-            torch.arange(kernel_size, dtype=torch.float32),
-            torch.arange(kernel_size, dtype=torch.float32),
-            indexing="ij",
-        )
+        grid = mesh_grid(kernel_size)
     if isotropic:
         sigma_matrix = torch.tensor(
             [[sigma_x**2, 0], [0, sigma_x**2]], dtype=torch.float32
@@ -653,14 +651,15 @@ def random_mixed_kernels(
         return F.conv2d(o, kernel, groups=b * c).view(b, c, h, w)
 
 
-resize_type = Literal["nearest", "lanczos", "bilinear", "bicubic"]
+resize_type = Literal[
+    "nearest", "linear", "bilinear", "bicubic", "trilinear", "area", "nearest-exact"
+]
 
 
 def random_resize(
     image: torch.Tensor,
     resize_types: list[resize_type],
     resize_prob: list[float],
-    image_size: int,
 ) -> torch.Tensor:
     assert len(resize_types) == len(resize_prob), (
         "Resize types and probability list must have the same length."
@@ -668,37 +667,40 @@ def random_resize(
     assert math.isclose(sum(resize_prob), 1.0), "Resize probabilities must sum to 1."
 
     resize_type = random.choices(resize_types, weights=resize_prob, k=1)[0]
+    # linear', 'bilinear', 'bicubic' or 'trilinear'.
+    match resize_type:
+        case "nearest":
+            o = F.interpolate(image, scale_factor=0.5, mode="nearest")
+        case "linear":
+            o = F.interpolate(
+                image, scale_factor=0.5, mode="linear", align_corners=False
+            )
+        case "bilinear":
+            o = F.interpolate(
+                image, scale_factor=0.5, mode="bilinear", align_corners=False
+            )
+        case "bicubic":
+            o = F.interpolate(
+                image, scale_factor=0.5, mode="bicubic", align_corners=False
+            )
+        case "trilinear":
+            o = F.interpolate(
+                image, scale_factor=0.5, mode="trilinear", align_corners=False
+            )
+        case "area":
+            o = F.interpolate(image, scale_factor=0.5, mode="area")
+        case "nearest-exact":
+            o = F.interpolate(image, scale_factor=0.5, mode="nearest-exact")
 
-    if resize_type == "nearest":
-        return transforms.functional.resize(
-            image,
-            size=[image_size // 2, image_size // 2],
-            interpolation=transforms.InterpolationMode.NEAREST,
-        )
-    elif resize_type == "lanczos":
-        return transforms.functional.resize(
-            image,
-            [image_size // 2, image_size // 2],
-            interpolation=transforms.InterpolationMode.LANCZOS,
-        )
-    elif resize_type == "bilinear":
-        return transforms.functional.resize(
-            image,
-            size=[image_size // 2, image_size // 2],
-            interpolation=transforms.InterpolationMode.BILINEAR,
-        )
-    else:  # resize_type == "bicubic"
-        return transforms.functional.resize(
-            image,
-            size=[image_size // 2, image_size // 2],
-            interpolation=transforms.InterpolationMode.BICUBIC,
-        )
+    return o.clamp(0, 1)
 
 
 def gray_noise(
     image: torch.Tensor, mean: float = 0.0, sigma: float = 1.0
 ) -> torch.Tensor:
     noise = torch.randn_like(image) * sigma + mean
+    noise = noise.to(image.device)
+    noise = noise.clamp(0, 1)
     return image + noise
 
 
@@ -711,6 +713,7 @@ def random_noise(
     noise_prob: list[float],
     mean: float = 0.0,
     sigma: float = 1.0,
+    alpha: float = 0.01,
 ) -> torch.Tensor:
     assert len(noise_types) == len(noise_prob), (
         "Noise types and probability list must have the same length."
@@ -723,24 +726,25 @@ def random_noise(
         case "gaussian":
             o = transforms.GaussianNoise(mean=mean, sigma=sigma)(image)
         case "poisson":
-            o = torch.poisson(image * 255) / 255.0
+            noise = alpha * (torch.poisson(image / alpha) - (image / alpha))
+            o = image + noise
+            o = o.clamp(0, 1)
 
     if np.random.rand() < 0.4:
         o = gray_noise(o, mean=mean, sigma=sigma)
 
-    return o.clamp(0, 1)
-
-
-def jpeg_noise(image: torch.Tensor, quality: list[int] = [30, 95]) -> torch.Tensor:
-    return image
+    return o
 
 
 @final
 class Degrader1(nn.Module):
-    def __init__(self, image_size: int):
+    def __init__(self, image_size: int, poisson_alpha: float):
         super(Degrader1, self).__init__()
 
         self.image_size = image_size
+        self.poisson_alpha = poisson_alpha
+
+        self.jpeg = transforms.JPEG([30, 95])
 
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -769,9 +773,8 @@ class Degrader1(nn.Module):
 
         o = random_resize(
             o,
-            resize_types=["nearest", "lanczos", "bilinear", "bicubic"],
+            resize_types=["nearest", "area", "bilinear", "bicubic"],
             resize_prob=[0.25, 0.25, 0.25, 0.25],
-            image_size=self.image_size,
         )
 
         o = random_noise(
@@ -780,19 +783,25 @@ class Degrader1(nn.Module):
             noise_prob=[0.5, 0.5],
             mean=0.0,
             sigma=0.05,
+            alpha=self.poisson_alpha,
         )
 
-        o = jpeg_noise(o)
+        o = o * 255
+        o = o.to(torch.uint8)
+        o = self.jpeg(o) / 255.0
 
         return o
 
 
 @final
 class Degrader2(nn.Module):
-    def __init__(self, image_size: int):
+    def __init__(self, image_size: int, poisson_alpha: float):
         super(Degrader2, self).__init__()
 
         self.image_size = image_size
+        self.poisson_alpha = poisson_alpha
+
+        self.jpeg = transforms.JPEG([30, 95])
 
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -818,9 +827,8 @@ class Degrader2(nn.Module):
 
         o = random_resize(
             o,
-            resize_types=["nearest", "lanczos", "bilinear", "bicubic"],
+            resize_types=["nearest", "area", "bilinear", "bicubic"],
             resize_prob=[0.25, 0.25, 0.25, 0.25],
-            image_size=48,
         )
 
         o = random_noise(
@@ -829,9 +837,12 @@ class Degrader2(nn.Module):
             noise_prob=[0.5, 0.5],
             mean=0.0,
             sigma=0.05,
+            alpha=self.poisson_alpha,
         )
 
-        o = jpeg_noise(o)
+        o = o * 255.0
+        o = o.to(torch.uint8)
+        o = self.jpeg(o) / 255.0
 
         if np.random.rand() < 0.8:
             o = torch.sinc(o)
@@ -844,24 +855,31 @@ class RealESRGAN(BaseGANModel):
     def __init__(self, config: GANConfig):
         super(RealESRGAN, self).__init__(config)
 
+        poisson_alpha = config.model_params.get("poisson_alpha", 0.01)
+
         beta: float = config.model_params["beta"] or 1.0
         assert 0 < beta <= 1
 
         rrdb_layers: int = config.model_params["rrdb_layers"] or 16
         assert 0 < rrdb_layers
 
+        image_size = config.model_params.get("image_size", None)
+
         if config.dataset == "df2k_ost":
             in_channels = 3
-            image_size = 256
+            if image_size is None:
+                image_size = 256
         elif config.dataset == "df2k_ost_small":
             in_channels = 3
-            image_size = 96
+            if image_size is None:
+                image_size = 96
         else:
             in_channels = 3
-            image_size = 64
+            if image_size is None:
+                image_size = 64
 
-        self.degrader1 = Degrader1(image_size)
-        self.degrader2 = Degrader2(image_size // 2)
+        self.degrader1 = Degrader1(image_size, poisson_alpha=poisson_alpha)
+        self.degrader2 = Degrader2(image_size // 2, poisson_alpha=poisson_alpha)
 
         self.discriminator = Discriminator(in_channels)
         self.generator = Generator(rrdb_layers, beta)

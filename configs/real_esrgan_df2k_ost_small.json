@@ -1,7 +1,7 @@
 {
     "name": "real_esrgan_df2k_ost_small",
     "dataset": "df2k_ost_small",
-    "batch_size": 32,
+    "batch_size": 64,
     "shuffle": true,
     "epochs": 2,
     "early_stopping": true,
@@ -13,7 +13,8 @@
     "model": "real_esrgan",
     "model_params": {
         "beta": 0.2,
-        "rrdb_layers": 16
+        "rrdb_layers": 16,
+        "image_size": 48
     },
     "g_optimizer": "adamw",
     "g_optimizer_params": {
