@@ -77,3 +77,5 @@ class GANConfig(Config):
     pretrain_optimizer: OptimizerName = "adamw"
     pretrain_optimizer_params: OptimizerParams = AdamWParams(lr=1e-4)
     pretrain_loss_function: LossFunctionName = "l1"
+    save_pretrained: bool = True
+    load_pretrained: bool = False

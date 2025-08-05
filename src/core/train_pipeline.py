@@ -145,6 +145,9 @@ class GANPipeline(Pipeline):
 
         self.model.pretrain(self.dataset.train)
 
+        if self.config.save_pretrained:
+            self.model.save_pretrained()
+
         self.logger.info(f"Pre-training completed for GAN model {self.config.name}")
 
     @override
@@ -212,6 +215,8 @@ class GANPipeline(Pipeline):
     @override
     def run(self):
         """Run the complete GAN pipeline: train and evaluate."""
+        if self.config.load_pretrained:
+            self.model.load_pretrained()
         if self.config.pretrain:
             self.pretrain()
         self.train()

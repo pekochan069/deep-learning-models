@@ -68,6 +68,17 @@ class BaseGANModel(BaseModel):
         name = name or self.config.name
         save_model(self, name)
 
+    def save_discriminator(self, name: str | None = None):
+        name = name or f"{self.config.name}_discriminator"
+        save_model(self.discriminator, name)
+
+    def save_generator(self, name: str | None = None):
+        name = name or f"{self.config.name}_generator"
+        save_model(self.generator, name)
+
+    def save_pretrained(self):
+        self.save_generator(f"{self.config.name}_pretrained_generator")
+
     @override
     def load(self):
         """Load the model and update weights."""
@@ -78,6 +89,35 @@ class BaseGANModel(BaseModel):
         _ = self.load_state_dict(loaded_model.state_dict())
         _ = self.to(self.device)
         self.logger.info(f"Model {self.config.name} loaded successfully.")
+
+    def load_discriminator(self, name: str | None = None):
+        name = name or f"{self.config.name}_discriminator"
+        loaded_model = load_model(self.discriminator, name)
+        if loaded_model is None:
+            self.logger.error(f"Discriminator {name} not found.")
+            return
+        _ = self.discriminator.load_state_dict(loaded_model.state_dict())
+        _ = self.discriminator.to(self.device)
+        self.logger.info(f"Discriminator {name} loaded successfully.")
+
+    def load_generator(self, name: str | None = None):
+        name = name or f"{self.config.name}_generator"
+        loaded_model = load_model(self.generator, name)
+        if loaded_model is None:
+            self.logger.error(f"Generator {name} not found.")
+            return
+        _ = self.generator.load_state_dict(loaded_model.state_dict())
+        _ = self.generator.to(self.device)
+        self.logger.info(f"Generator {name} loaded successfully.")
+
+    def load_pretrained(self):
+        """Load the pretrained generator."""
+        self.logger.info(f"Loading pretrained generator for {self.config.name}")
+        self.load_generator(f"{self.config.name}_pretrained_generator")
+        if not self.config.save_pretrained:
+            self.logger.warning(
+                "Pretrained generator is loaded but save_pretrained is set to False."
+            )
 
     def pretrain_epoch(
         self,
