@@ -5,8 +5,6 @@ import logging.config
 import logging.handlers
 from typing import Literal, override
 
-logger = logging.getLogger(__name__)
-
 logging_level = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
@@ -112,7 +110,7 @@ class JSONFormatter(logging.Formatter):
 
         string = ""
 
-        string += f"{message['timestamp']} {message['logger']} "
+        string += f"{message['timestamp']} "
 
         if message["level"] == "DEBUG":
             string += "\033[1;90mDEBUG\033[0m    "
@@ -125,7 +123,7 @@ class JSONFormatter(logging.Formatter):
         elif message["level"] == "CRITICAL":
             string += "\033[1;7;31mCRITICAL\033[0m "
 
-        string += f"{message['module']}:{message['function']}:{message['line']:<4}: {message['message']}"
+        string += f"{message['logger']} {message['module']}:{message['function']}:{message['line']:<4}: {message['message']}"
 
         return string
 
