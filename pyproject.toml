@@ -35,9 +35,9 @@ dev = [
 [tool.uv]
 
 [tool.poe.tasks]
-main = "src/main.py"
-format = "ruff format src"
-lint = "ruff check --fix src"
+main = "main.py"
+format = "ruff format ."
+lint = "ruff check --fix ."
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
@@ -45,8 +45,8 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
 explicit = true
 
 [[tool.uv.index]]
@@ -60,8 +60,8 @@ url = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
 explicit = true
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu128" }]
-torchvision = [{ index = "pytorch-cu128" }]
+torch = [{ index = "pytorch-cu129" }]
+torchvision = [{ index = "pytorch-cu129" }]
 pytorch-triton-xpu = [{ index = "pytorch-xpu" }]
 intel-extension-for-pytorch = [{ index = "pytorch-extension-xpu" }]
 
