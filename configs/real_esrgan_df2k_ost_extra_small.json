@@ -7,9 +7,12 @@
     "early_stopping": true,
     "early_stopping_monitor": "train_loss",
     "early_stopping_patience": 5,
-    "early_stopping_min_delta": 0.0,
+    "early_stopping_min_delta": -0.002,
+    "early_stopping_min_delta_strategy": "previous_proportional",
     "save_after_n_epoch": true,
     "save_after_n_epoch_period": 1,
+    "show_plot": true,
+    "save_plot": true,
     "model": "real_esrgan",
     "model_params": {
         "beta": 0.2,
@@ -70,5 +73,7 @@
     },
     "pretrain_loss_function": "l1",
     "save_pretrained": true,
-    "load_pretrained": true
+    "load_pretrained": true,
+    "show_pretrained_plot": false,
+    "save_pretrained_plot": true
 }

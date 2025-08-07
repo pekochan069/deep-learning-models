@@ -1,11 +1,13 @@
 import logging
 
+import torch
+import torchvision.transforms.v2 as transforms
 
-
-from core.config import DiffusionConfig
+from core.config import DiffusionConfig, GANConfig
 from core.logger import init_logger
 from core.optimizer import AdamWParams
-from core.pipeline import DiffusionPipeline
+from core.pipeline import DiffusionPipeline, GANPipeline
+
 
 logger = logging.getLogger("main")
 
@@ -376,83 +378,86 @@ def main():
     # pipeline = GANPipeline(config)
     # pipeline.run()
 
-    # config = GANConfig(
-    #     name="real_esrgan_df2k_ost_extra_small",
-    #     model="real_esrgan",
-    #     model_params={
-    #         "beta": 0.2,
-    #         "rrdb_layers": 16,
-    #         "image_size": 48,
-    #     },
-    #     dataset="df2k_ost_small",
-    #     batch_size=64,
-    #     shuffle=True,
-    #     g_optimizer="adamw",
-    #     g_optimizer_params=AdamWParams(
-    #         lr=1e-4,
-    #         betas=(0.9, 0.999),
-    #         weight_decay=1e-2,
-    #     ),
-    #     d_optimizer="adamw",
-    #     d_optimizer_params=AdamWParams(
-    #         lr=5e-5,
-    #         betas=(0.9, 0.999),
-    #         weight_decay=1e-2,
-    #     ),
-    #     g_loss_function="srgan_generator_loss",
-    #     d_loss_function="esrgan_discriminator_loss",
-    #     epochs=50,
-    #     save_after_n_epoch=True,
-    #     save_after_n_epoch_period=1,
-    #     real_label=0.95,
-    #     early_stopping=True,
-    #     early_stopping_monitor="train_loss",
-    #     pretrain=True,
-    #     pretrain_epochs=5,
-    #     save_pretrained=True,
-    #     load_pretrained=True,
-    # )
-    # GANConfig.save_config(config)
-    # # config = GANConfig.load_config("real_esrgan_df2k_ost_small")
-
-    # pipeline = GANPipeline(
-    #     config,
-    #     target_transform=transforms.Compose(
-    #         [
-    #             transforms.ToImage(),
-    #             transforms.Resize((48, 48)),
-    #             transforms.ToDtype(torch.float32, scale=True),
-    #         ]
-    #     ),
-    #     input_transform=transforms.Compose(
-    #         [
-    #             transforms.ToImage(),
-    #             transforms.Resize((48, 48)),
-    #             transforms.ToDtype(torch.float32, scale=True),
-    #         ]
-    #     ),
-    # )
-    # pipeline.run()
-
-    config = DiffusionConfig(
-        name="vae_mnist",
-        model="vae",
-        dataset="mnist",
-        batch_size=128,
+    config = GANConfig(
+        name="real_esrgan_df2k_ost_extra_small",
+        model="real_esrgan",
+        model_params={
+            "beta": 0.2,
+            "rrdb_layers": 16,
+            "image_size": 48,
+        },
+        dataset="df2k_ost_small",
+        batch_size=64,
         shuffle=True,
-        optimizer="adam",
-        optimizer_params=AdamWParams(lr=3e-4),
-        loss_function="vae_loss",
+        g_optimizer="adamw",
+        g_optimizer_params=AdamWParams(
+            lr=1e-4,
+            betas=(0.9, 0.999),
+            weight_decay=1e-2,
+        ),
+        d_optimizer="adamw",
+        d_optimizer_params=AdamWParams(
+            lr=5e-5,
+            betas=(0.9, 0.999),
+            weight_decay=1e-2,
+        ),
+        g_loss_function="srgan_generator_loss",
+        d_loss_function="esrgan_discriminator_loss",
+        epochs=50,
+        save_after_n_epoch=True,
+        save_after_n_epoch_period=1,
+        real_label=0.95,
         early_stopping=True,
         early_stopping_monitor="train_loss",
+        early_stopping_patience=5,
         early_stopping_min_delta=-0.002,
         early_stopping_min_delta_strategy="previous_proportional",
-        epochs=100,
-        save_after_n_epoch=True,
-        save_after_n_epoch_period=10,
+        pretrain=True,
+        pretrain_epochs=5,
+        save_pretrained=True,
+        load_pretrained=True,
     )
-    pipeline = DiffusionPipeline(config)
-    pipeline.evaluate()
+    GANConfig.save_config(config)
+    # config = GANConfig.load_config("real_esrgan_df2k_ost_small")
+
+    pipeline = GANPipeline(
+        config,
+        target_transform=transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.Resize((48, 48)),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        ),
+        input_transform=transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.Resize((48, 48)),
+                transforms.ToDtype(torch.float32, scale=True),
+            ]
+        ),
+    )
+    pipeline.run()
+
+    # config = DiffusionConfig(
+    #     name="vae_mnist",
+    #     model="vae",
+    #     dataset="mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params=AdamWParams(lr=3e-4),
+    #     loss_function="vae_loss",
+    #     early_stopping=True,
+    #     early_stopping_monitor="train_loss",
+    #     early_stopping_min_delta=-0.002,
+    #     early_stopping_min_delta_strategy="previous_proportional",
+    #     epochs=100,
+    #     save_after_n_epoch=True,
+    #     save_after_n_epoch_period=10,
+    # )
+    # pipeline = DiffusionPipeline(config)
+    # pipeline.evaluate()
 
 
 if __name__ == "__main__":
