@@ -8,7 +8,7 @@ from torchinfo import summary
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.cnn.base_model import History
+from models.classification.base_model import History
 
 from ..base_model import BaseModel
 from core.config import GANConfig

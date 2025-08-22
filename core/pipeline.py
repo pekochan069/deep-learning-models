@@ -5,10 +5,10 @@ from typing import Any, Callable, final, override
 
 import torch
 
-from core.config import CNNConfig, DiffusionConfig, GANConfig
+from core.config import ClassificationConfig, DiffusionConfig, GANConfig
 from core.dataset import TrainableDataset, get_dataset
-from models.cnn import get_cnn_model
-from models.cnn.base_model import CNNBaseModel
+from models.classification import get_classification_model
+from models.classification.base_model import ClassificationBaseModel
 from models.diffusion import get_diffusion_model
 from models.diffusion.base_model import DiffusionBaseModel
 from models.gan import get_gan_model
@@ -46,15 +46,17 @@ class Pipeline(metaclass=ABCMeta):
 
 
 @final
-class CNNPipeline(Pipeline):
-    config: CNNConfig
-    model: CNNBaseModel
+class ClassificationPipeline(Pipeline):
+    config: ClassificationConfig
+    model: ClassificationBaseModel
     dataset: TrainableDataset
 
-    def __init__(self, config: CNNConfig):
-        super(CNNPipeline, self).__init__(logger_name="CNNPipeline")
+    def __init__(self, config: ClassificationConfig):
+        super(ClassificationPipeline, self).__init__(
+            logger_name="ClassificationPipeline"
+        )
         self.config = config
-        self.model = get_cnn_model(self.config)
+        self.model = get_classification_model(self.config)
         self.dataset = get_dataset(self.config)
 
     @override

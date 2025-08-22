@@ -11,7 +11,7 @@ DatasetName = Literal[
     "df2k_ost",
     "df2k_ost_small",
 ]
-CNNModelName = Literal[
+ClassificationModelName = Literal[
     "example_cnn",
     "le_net",
     "alex_net",

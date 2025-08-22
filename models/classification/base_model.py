@@ -1,30 +1,38 @@
 import time
-from typing import Any, override
-
+from typing import Any, final, override
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from torchinfo import summary
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from core.config import DiffusionConfig
+from ..base_model import BaseModel
+from core.config import ClassificationConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model, save_model
-from models.classification.base_model import History
-from models.base_model import BaseModel
 
 
-class DiffusionBaseModel(BaseModel):
-    config: DiffusionConfig
+@final
+class History:
+    train_loss: list[float]
+    val_loss: list[float]
+
+    def __init__(self):
+        self.train_loss = []
+        self.val_loss = []
+
+
+class ClassificationBaseModel(BaseModel):
+    config: ClassificationConfig
     history: History
 
-    def __init__(self, config: DiffusionConfig):
-        super(DiffusionBaseModel, self).__init__("Diffusion")
-
+    def __init__(self, config: ClassificationConfig):
+        super(ClassificationBaseModel, self).__init__("Classification")
         self.config = config
+
         self.history = History()
 
     @override

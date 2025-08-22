@@ -773,17 +773,19 @@ class ColorConversion(nn.Module):
         Converts an RGB image tensor to YCbCr color space.
 
         Args:
-            x (torch.Tensor): Input image tensor of shape (B, C, H, W) with RGB channels.
+                x (torch.Tensor): Input image tensor of shape (B, C, H, W) with RGB channels.
 
         Returns:
-            torch.Tensor: YCbCr image tensor of shape (B, C, H, W).
+                torch.Tensor: YCbCr image tensor of shape (B, C, H, W).
         """
 
         # Perform matrix multiplication between the RGB channels and the conversion matrix
         # 'ij,njhw->nihw' specifies the Einstein summation for batch processing
-        o = torch.einsum("ij,njhw->nihw", self.matrix.to(x.device), x) + self.shift.to(
-            x.device
-        )
+        print(self.rgb_to_ycbcr_matrix.shape)
+        print(x.shape)
+        o = torch.einsum(
+            "ij,njhw->nihw", self.rgb_to_ycbcr_matrix.to(x.device), x
+        ) + self.shift.to(x.device)
 
         return o
 
@@ -819,10 +821,10 @@ class InvertColorConversion(nn.Module):
         Converts a YCbCr image tensor back to RGB color space.
 
         Args:
-            ycbcr (torch.Tensor): Input YCbCr image tensor of shape (B, C, H, W).
+                ycbcr (torch.Tensor): Input YCbCr image tensor of shape (B, C, H, W).
 
         Returns:
-            torch.Tensor: RGB image tensor of shape (B, C, H, W) with values clamped between 0 and 255.
+                torch.Tensor: RGB image tensor of shape (B, C, H, W) with values clamped between 0 and 255.
         """
 
         # Subtract the shift to center the Cb and Cr channels
@@ -853,7 +855,7 @@ class ChromaDownsample(nn.Module):
         Initializes the ChromaDownsample module.
 
         Args:
-            factor (int, optional): Subsampling factor. Must be 1, 2, or 4. Defaults to 2.
+                factor (int, optional): Subsampling factor. Must be 1, 2, or 4. Defaults to 2.
         """
         super().__init__()
 
@@ -867,14 +869,14 @@ class ChromaDownsample(nn.Module):
         Performs chroma subsampling on the input YCbCr image.
 
         Args:
-            ycbcr (torch.Tensor): Input image tensor in YCbCr color space
-                                  with shape (B, 3, H, W).
+                ycbcr (torch.Tensor): Input image tensor in YCbCr color space
+                                                          with shape (B, 3, H, W).
 
         Returns:
-            tuple:
-                - Y (torch.Tensor): Luminance channel with shape (B, 1, H, W).
-                - Cb_subsampled (torch.Tensor): Subsampled Cb channel.
-                - Cr_subsampled (torch.Tensor): Subsampled Cr channel.
+                tuple:
+                        - Y (torch.Tensor): Luminance channel with shape (B, 1, H, W).
+                        - Cb_subsampled (torch.Tensor): Subsampled Cb channel.
+                        - Cr_subsampled (torch.Tensor): Subsampled Cr channel.
         """
 
         # Extract the Y, Cb, and Cr channels from the input tensor
@@ -913,7 +915,7 @@ class ChromaUpsample(nn.Module):
         Initializes the ChromaUpsample module.
 
         Args:
-            factor (int, optional): Upsampling factor. Must be 1, 2, or 4. Default is 2.
+                factor (int, optional): Upsampling factor. Must be 1, 2, or 4. Default is 2.
         """
         super().__init__()
 
@@ -925,13 +927,13 @@ class ChromaUpsample(nn.Module):
         Performs chroma upsampling on the Cb and Cr channels.
 
         Args:
-            Cb (torch.Tensor): Subsampled Cb channel with shape (B, 1, H', W').
-            Cr (torch.Tensor): Subsampled Cr channel with shape (B, 1, H', W').
+                Cb (torch.Tensor): Subsampled Cb channel with shape (B, 1, H', W').
+                Cr (torch.Tensor): Subsampled Cr channel with shape (B, 1, H', W').
 
         Returns:
-            tuple:
-                - Cb_upsampled (torch.Tensor): Upsampled Cb channel with shape (B, 1, H, W).
-                - Cr_upsampled (torch.Tensor): Upsampled Cr channel with shape (B, 1, H, W).
+                tuple:
+                        - Cb_upsampled (torch.Tensor): Upsampled Cb channel with shape (B, 1, H, W).
+                        - Cr_upsampled (torch.Tensor): Upsampled Cr channel with shape (B, 1, H, W).
         """
 
         if self.factor > 1:
@@ -965,7 +967,7 @@ class BlockSplitting(nn.Module):
         Initializes the BlockSplitting module.
 
         Args:
-            block_size (int, optional): Size of each block. Default is 8.
+                block_size (int, optional): Size of each block. Default is 8.
         """
         super().__init__()
 
@@ -977,11 +979,11 @@ class BlockSplitting(nn.Module):
         Splits the input image into non-overlapping blocks.
 
         Args:
-            x (torch.Tensor): Input image tensor of shape (B, C, H, W),
+                x (torch.Tensor): Input image tensor of shape (B, C, H, W),
 
         Returns:
-            torch.Tensor: Tensor containing image blocks with shape (B, num_blocks * C, block_size, block_size),
-                          where num_blocks = (H // block_size) * (W // block_size).
+                torch.Tensor: Tensor containing image blocks with shape (B, num_blocks * C, block_size, block_size),
+                                          where num_blocks = (H // block_size) * (W // block_size).
         """
         B, _, H, W = x.shape  # Batch size, Channels, Height, Width
 
@@ -1016,7 +1018,7 @@ class BlockMerging(nn.Module):
         Initializes the BlockMerging module.
 
         Args:
-            block_size (int, optional): Size of each block. Default is 8.
+                block_size (int, optional): Size of each block. Default is 8.
         """
         super().__init__()
 
@@ -1028,12 +1030,12 @@ class BlockMerging(nn.Module):
         Merges blocks to reconstruct the original image.
 
         Args:
-            x (torch.Tensor): Tensor containing image blocks with shape (B, num_blocks * C, block_size, block_size),
-                                   where num_blocks = (H // block_size) * (W // block_size).
-            original_size (tuple): Tuple containing the original image dimensions as (H, W).
+                x (torch.Tensor): Tensor containing image blocks with shape (B, num_blocks * C, block_size, block_size),
+                                                           where num_blocks = (H // block_size) * (W // block_size).
+                original_size (tuple): Tuple containing the original image dimensions as (H, W).
 
         Returns:
-            torch.Tensor: Reconstructed image tensor of shape (B, C, H, W).
+                torch.Tensor: Reconstructed image tensor of shape (B, C, H, W).
         """
         H, W = original_size  # Original Height and Width
         B = x.shape[0]  # Batch size
@@ -1070,7 +1072,7 @@ class DCT2D(nn.Module):
         Initializes the DCT2D module by creating the DCT basis tensor and scaling factors.
 
         Args:
-            block_size (int, optional): Size of the blocks to perform DCT on. Default is 8.
+                block_size (int, optional): Size of the blocks to perform DCT on. Default is 8.
         """
         super().__init__()
 
@@ -1100,12 +1102,12 @@ class DCT2D(nn.Module):
         Applies the 2D DCT to the input image blocks.
 
         Args:
-            blocks (torch.Tensor): Input image blocks tensor of shape (B, C, H, W),
-                                   where B is batch size, C is number of channels,
-                                   and H, W are height and width of the blocks (typically 8x8).
+                blocks (torch.Tensor): Input image blocks tensor of shape (B, C, H, W),
+                                                           where B is batch size, C is number of channels,
+                                                           and H, W are height and width of the blocks (typically 8x8).
 
         Returns:
-            torch.Tensor: DCT-transformed blocks of shape (B, C, H, W).
+                torch.Tensor: DCT-transformed blocks of shape (B, C, H, W).
         """
 
         # Center the pixel values around zero by subtracting 128 (common in JPEG)
@@ -1133,7 +1135,7 @@ class IDCT2D(nn.Module):
         Initializes the IDCT2D module by creating the inverse DCT basis tensor and scaling factors.
 
         Args:
-            block_size (int, optional): Size of the blocks to perform IDCT on. Default is 8.
+                block_size (int, optional): Size of the blocks to perform IDCT on. Default is 8.
         """
         super().__init__()
 
@@ -1163,10 +1165,10 @@ class IDCT2D(nn.Module):
         Applies the inverse 2D DCT to the input DCT coefficients.
 
         Args:
-            x (torch.Tensor): DCT coefficients tensor of shape (B, C, H, W),
+                x (torch.Tensor): DCT coefficients tensor of shape (B, C, H, W),
 
         Returns:
-            torch.Tensor: Reconstructed image blocks of shape (B, C, H, W) with pixel values in [0, 255].
+                torch.Tensor: Reconstructed image blocks of shape (B, C, H, W) with pixel values in [0, 255].
         """
         # Apply the scaling factors to the DCT coefficients for normalization
         o = x * self.alpha.to(x.device)
@@ -1193,16 +1195,16 @@ def differentiable_round(x: torch.Tensor):
     term to enable gradient computation.
 
     Args:
-        x (torch.Tensor): Input tensor to be softly rounded.
+            x (torch.Tensor): Input tensor to be softly rounded.
 
     Returns:
-        torch.Tensor: Softly rounded tensor with gradients enabled.
+            torch.Tensor: Softly rounded tensor with gradients enabled.
 
     Example:
-        >>> x = torch.tensor([1.2, 2.5, 3.7], requires_grad=True)
-        >>> y = differentiable_round(x)
-        >>> y
-        tensor([ 1.2000,  2.5000,  3.7000], grad_fn=<AddBackward0>)
+            >>> x = torch.tensor([1.2, 2.5, 3.7], requires_grad=True)
+            >>> y = differentiable_round(x)
+            >>> y
+            tensor([ 1.2000,  2.5000,  3.7000], grad_fn=<AddBackward0>)
     """
 
     # Compute the nearest integer to each element in the input tensor
@@ -1272,10 +1274,10 @@ def quality_to_factor(quality: int):
     Converts a JPEG quality factor (1-100) to a scaling factor used for quantization tables.
 
     Args:
-        quality (float): JPEG quality factor, in the range [1, 100].
+            quality (float): JPEG quality factor, in the range [1, 100].
 
     Returns:
-        float: Scaled quantization factor used to adjust quantization tables.
+            float: Scaled quantization factor used to adjust quantization tables.
     """
 
     # Validate the input quality factor
@@ -1312,10 +1314,10 @@ class Quantization(nn.Module):
         Initializes the Quantization module.
 
         Args:
-            q_table (torch.Tensor): Quantization table used to scale the DCT coefficients.
-            factor (float, optional): Scaling factor to adjust the quantization strength.
-                                      A higher factor results in more aggressive quantization.
-                                      Default is 0.5.
+                q_table (torch.Tensor): Quantization table used to scale the DCT coefficients.
+                factor (float, optional): Scaling factor to adjust the quantization strength.
+                                                                  A higher factor results in more aggressive quantization.
+                                                                  Default is 0.5.
         """
         super().__init__()
 
@@ -1331,10 +1333,10 @@ class Quantization(nn.Module):
         Applies quantization to the input DCT blocks.
 
         Args:
-            blocks (torch.Tensor): DCT-transformed image blocks with shape (B, C, H, W),
+                blocks (torch.Tensor): DCT-transformed image blocks with shape (B, C, H, W),
 
         Returns:
-            torch.Tensor: Quantized blocks with the same shape as input, using differentiable rounding.
+                torch.Tensor: Quantized blocks with the same shape as input, using differentiable rounding.
         """
 
         # Scale the DCT coefficients by dividing by the quantization table and scaling factor
@@ -1361,11 +1363,11 @@ class Dequantization(nn.Module):
         Initializes the Dequantization module.
 
         Args:
-            q_table (torch.Tensor): Quantization table used to scale the DCT coefficients.
-                                     Should be the same table used during quantization.
-            factor (float, optional): Scaling factor used during quantization to adjust the
-                                      dequantization strength. Must match the factor used
-                                      in the Quantization module. Default is 0.5.
+                q_table (torch.Tensor): Quantization table used to scale the DCT coefficients.
+                                                                 Should be the same table used during quantization.
+                factor (float, optional): Scaling factor used during quantization to adjust the
+                                                                  dequantization strength. Must match the factor used
+                                                                  in the Quantization module. Default is 0.5.
         """
         super().__init__()
 
@@ -1381,10 +1383,10 @@ class Dequantization(nn.Module):
         Applies dequantization to the input quantized DCT blocks.
 
         Args:
-            quantized_blocks (torch.Tensor): Quantized DCT coefficients with shape (B, C, H, W).
+                quantized_blocks (torch.Tensor): Quantized DCT coefficients with shape (B, C, H, W).
 
         Returns:
-            torch.Tensor: Dequantized blocks with the same shape as input, restoring the original scale.
+                torch.Tensor: Dequantized blocks with the same shape as input, restoring the original scale.
         """
 
         # Multiply the quantized coefficients by the quantization table and scaling factor
@@ -1430,11 +1432,11 @@ class ZigZagOrder(nn.Module):
         Applies ZigZag ordering to the input image blocks.
 
         Args:
-            blocks (torch.Tensor): Input image blocks with shape (B, num_blocks, block_size, block_size),
+                blocks (torch.Tensor): Input image blocks with shape (B, num_blocks, block_size, block_size),
 
         Returns:
-            torch.Tensor: ZigZag ordered coefficients with shape (B, num_blocks, 64),
-                          where 64 corresponds to the flattened 8x8 block.
+                torch.Tensor: ZigZag ordered coefficients with shape (B, num_blocks, 64),
+                                          where 64 corresponds to the flattened 8x8 block.
         """
 
         # Extract the dimensions of the input blocks
@@ -1495,11 +1497,11 @@ class InverseZigZagOrder(nn.Module):
         Applies Inverse ZigZag ordering to the input coefficients.
 
         Args:
-            zigzag_coeffs (torch.Tensor): ZigZag ordered coefficients with shape (B, num_blocks, 64),
-                                         where 64 corresponds to the flattened 8x8 block.
+                zigzag_coeffs (torch.Tensor): ZigZag ordered coefficients with shape (B, num_blocks, 64),
+                                                                         where 64 corresponds to the flattened 8x8 block.
 
         Returns:
-            torch.Tensor: Reconstructed image blocks with shape (B, num_blocks, 8, 8).
+                torch.Tensor: Reconstructed image blocks with shape (B, num_blocks, 8, 8).
         """
 
         # Reorder the coefficients back to their original 8x8 block positions using inverse_index
@@ -1514,13 +1516,30 @@ class InverseZigZagOrder(nn.Module):
         return o
 
 
-class JPEGModel(PydanticBaseModel):
+@final
+class JPEGModel:
     y: torch.Tensor
     cb: torch.Tensor
     cr: torch.Tensor
     y_size: tuple[int, int]
     cb_size: tuple[int, int]
     cr_size: tuple[int, int]
+
+    def __init__(
+        self,
+        y: torch.Tensor,
+        cb: torch.Tensor,
+        cr: torch.Tensor,
+        y_size: tuple[int, int],
+        cb_size: tuple[int, int],
+        cr_size: tuple[int, int],
+    ) -> None:
+        self.y = y
+        self.cb = cb
+        self.cr = cr
+        self.y_size = y_size
+        self.cb_size = cb_size
+        self.cr_size = cr_size
 
 
 @final
@@ -1529,19 +1548,19 @@ class JPEGEncoder(nn.Module):
     Module to encode an image into its JPEG compressed representation.
 
     The encoder performs the following steps:
-        1. Converts the input RGB image to YCbCr color space.
-        2. Applies chroma subsampling to reduce color information.
-        3. Splits the image into non-overlapping blocks.
-        4. Applies the Discrete Cosine Transform (DCT) to each block.
-        5. Quantizes the DCT coefficients using predefined quantization tables.
-        6. rearrange the 8x8 block of DCT coefficients into a 1D array
+            1. Converts the input RGB image to YCbCr color space.
+            2. Applies chroma subsampling to reduce color information.
+            3. Splits the image into non-overlapping blocks.
+            4. Applies the Discrete Cosine Transform (DCT) to each block.
+            5. Quantizes the DCT coefficients using predefined quantization tables.
+            6. rearrange the 8x8 block of DCT coefficients into a 1D array
 
     Args:
-        chroma_downsample_factor (int, optional): Factor by which to downsample chroma channels.
-                                                   Common factors are 1 (no subsampling), 2, or 4.
-                                                   Default is 4.
-        quality (int, optional): Quality factor for compression (1-100). Higher values preserve
-                                 more details but result in larger file sizes. Default is 100.
+            chroma_downsample_factor (int, optional): Factor by which to downsample chroma channels.
+                                                                                               Common factors are 1 (no subsampling), 2, or 4.
+                                                                                               Default is 4.
+            quality (int, optional): Quality factor for compression (1-100). Higher values preserve
+                                                             more details but result in larger file sizes. Default is 100.
     """
 
     def __init__(
@@ -1559,7 +1578,7 @@ class JPEGEncoder(nn.Module):
         self.chroma_downsample = ChromaDownsample(chroma_downsample_factor)
 
         # Initialize the block splitting module for dividing the image into blocks
-        self.block_splitting = BlockSplitting()
+        self.block_splitting = BlockSplitting(3)
 
         # Initialize the 2D DCT module for transforming blocks to the frequency domain
         self.dct = DCT2D()
@@ -1577,16 +1596,16 @@ class JPEGEncoder(nn.Module):
         Encodes the input image into its JPEG compressed representation.
 
         Args:
-            image (torch.Tensor): Input image tensor of shape (B, C, H, W) in RGB format.
+                image (torch.Tensor): Input image tensor of shape (B, C, H, W) in RGB format.
 
         Returns:
-            dict: Dictionary containing quantized Y, Cb, Cr blocks and their original sizes.
-                  - 'Y': Quantized luminance blocks.
-                  - 'Cb': Quantized blue-difference chroma blocks.
-                  - 'Cr': Quantized red-difference chroma blocks.
-                  - 'Y_size': Original size of the Y channel before block splitting.
-                  - 'Cb_size': Original size of the Cb channel before block splitting.
-                  - 'Cr_size': Original size of the Cr channel before block splitting.
+                dict: Dictionary containing quantized Y, Cb, Cr blocks and their original sizes.
+                          - 'Y': Quantized luminance blocks.
+                          - 'Cb': Quantized blue-difference chroma blocks.
+                          - 'Cr': Quantized red-difference chroma blocks.
+                          - 'Y_size': Original size of the Y channel before block splitting.
+                          - 'Cb_size': Original size of the Cb channel before block splitting.
+                          - 'Cr_size': Original size of the Cr channel before block splitting.
         """
 
         # Convert the RGB image to YCbCr color space
@@ -1632,19 +1651,19 @@ class JPEGDecoder(nn.Module):
     Module to decode a JPEG compressed representation back into an image.
 
     The decoder performs the following steps:
-        1. Invert the zig zag order.
-        2. Dequantizes the quantized DCT coefficients using predefined quantization tables.
-        3. Applies the Inverse Discrete Cosine Transform (IDCT) to each block.
-        4. Merges the blocks back into full-sized channels.
-        5. Upsamples the chroma channels to restore original color information.
-        6. Converts the image from YCbCr back to RGB color space.
+            1. Invert the zig zag order.
+            2. Dequantizes the quantized DCT coefficients using predefined quantization tables.
+            3. Applies the Inverse Discrete Cosine Transform (IDCT) to each block.
+            4. Merges the blocks back into full-sized channels.
+            5. Upsamples the chroma channels to restore original color information.
+            6. Converts the image from YCbCr back to RGB color space.
 
     Args:
-        chroma_upsample_factor (int, optional): Factor by which to upsample chroma channels.
-                                                 Should match the downsampling factor used during encoding.
-                                                 Default is 4.
-        quality (int, optional): Quality factor for decompression (1-100). Should match the factor used during encoding.
-                                 Default is 100.
+            chroma_upsample_factor (int, optional): Factor by which to upsample chroma channels.
+                                                                                             Should match the downsampling factor used during encoding.
+                                                                                             Default is 4.
+            quality (int, optional): Quality factor for decompression (1-100). Should match the factor used during encoding.
+                                                             Default is 100.
     """
 
     def __init__(
@@ -1666,7 +1685,7 @@ class JPEGDecoder(nn.Module):
         self.idct = IDCT2D()
 
         # Initialize the block merging module for reconstructing full-sized channels from blocks
-        self.block_merging = BlockMerging()
+        self.block_merging = BlockMerging(3)
 
         # Initialize the chroma upsampling module to restore the resolution of Cb and Cr channels
         self.chroma_upsampling = ChromaUpsample(chroma_upsample_factor)
@@ -1680,16 +1699,16 @@ class JPEGDecoder(nn.Module):
         Decodes the JPEG compressed data back into an RGB image.
 
         Args:
-            data (JPEGModel): Dictionary containing quantized Y, Cb, Cr blocks and their original sizes.
-                         - y: Quantized luminance blocks.
-                         - cb: Quantized blue-difference chroma blocks.
-                         - cr: Quantized red-difference chroma blocks.
-                         - y_size: Original size of the Y channel before block splitting.
-                         - cb_size: Original size of the Cb channel before block splitting.
-                         - cr_size: Original size of the Cr channel before block splitting.
+                data (JPEGModel): Dictionary containing quantized Y, Cb, Cr blocks and their original sizes.
+                                         - y: Quantized luminance blocks.
+                                         - cb: Quantized blue-difference chroma blocks.
+                                         - cr: Quantized red-difference chroma blocks.
+                                         - y_size: Original size of the Y channel before block splitting.
+                                         - cb_size: Original size of the Cb channel before block splitting.
+                                         - cr_size: Original size of the Cr channel before block splitting.
 
         Returns:
-            torch.Tensor: Reconstructed RGB image tensor of shape (B, C, H, W).
+                torch.Tensor: Reconstructed RGB image tensor of shape (B, C, H, W).
         """
         # Extract quantized DCT coefficients and their original sizes from the input data
         Y_zigzag = data.y
@@ -1806,9 +1825,10 @@ class Degrader1(nn.Module):
             alpha=self.poisson_alpha,
         )
 
-        o = o * 255
-        o = o.to(torch.uint8)
-        o = self.jpeg(o) / 255.0
+        # o = o * 255
+        # o = o.to(torch.uint8)
+        # o = self.jpeg(o) / 255.0
+        o = self.jpeg(o)
 
         return o
 
@@ -1860,9 +1880,10 @@ class Degrader2(nn.Module):
             alpha=self.poisson_alpha,
         )
 
-        o = o * 255.0
-        o = o.to(torch.uint8)
-        o = self.jpeg(o) / 255.0
+        # o = o * 255.0
+        # o = o.to(torch.uint8)
+        # o = self.jpeg(o) / 255.0
+        o = self.jpeg(o)
 
         if np.random.rand() < 0.8:
             o = torch.sinc(o)

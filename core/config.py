@@ -8,7 +8,7 @@ from core.optimizer import AdamWParams, OptimizerParams
 
 from .names import (
     DatasetName,
-    CNNModelName,
+    ClassificationModelName,
     DiffusionModelName,
     GANModelName,
     LossFunctionName,
@@ -55,8 +55,8 @@ class Config(PydanticBaseModel):
             return config
 
 
-class CNNConfig(Config):
-    model: CNNModelName
+class ClassificationConfig(Config):
+    model: ClassificationModelName
     model_params: dict[str, Any] = {}
     optimizer: OptimizerName
     optimizer_params: OptimizerParams

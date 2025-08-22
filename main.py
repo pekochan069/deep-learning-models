@@ -3,10 +3,10 @@ import logging
 import torch
 import torchvision.transforms.v2 as transforms
 
-from core.config import DiffusionConfig, GANConfig
+from core.config import ClassificationConfig, DiffusionConfig, GANConfig
 from core.logger import init_logger
 from core.optimizer import AdamWParams
-from core.pipeline import DiffusionPipeline, GANPipeline
+from core.pipeline import ClassificationPipeline, DiffusionPipeline, GANPipeline
 
 
 logger = logging.getLogger("main")
@@ -17,7 +17,7 @@ def main():
 
     logger.info("Starting Deep Learning Models")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="example_cnn",
     #     model="example_cnn",
     #     dataset="mnist",
@@ -27,10 +27,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("example_cnn")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("example_cnn")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="le_net",
     #     model="le_net",
     #     dataset="mnist",
@@ -40,10 +40,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("le_net")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("le_net")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="alex_net",
     #     model="alex_net",
     #     dataset="mini_imagenet",
@@ -54,10 +54,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("alex_net")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("alex_net")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="vgg11",
     #     model="vgg11",
     #     dataset="imagenet",
@@ -68,10 +68,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("vgg11")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("vgg11")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="res_net18",
     #     model="res_net18",
     #     dataset="mini_imagenet",
@@ -82,10 +82,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=3,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("res_net18")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("res_net18")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="res_net50",
     #     model="res_net50",
     #     dataset="mini_imagenet",
@@ -96,10 +96,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=3,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("res_net50")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("res_net50")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="vgg_net_16_cifar10",
     #     model="vgg_net16",
     #     dataset="cifar10",
@@ -110,10 +110,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("vgg_net_16_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("vgg_net_16_cifar10")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="res_net50_cifar10",
     #     model="res_net50",
     #     dataset="cifar10",
@@ -126,11 +126,11 @@ def main():
     #     early_stopping_min_delta=0.05,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("res_net50_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("res_net50_cifar10")
     # 71.44%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="inception_v1_cifar10",
     #     model="inception_v1",
     #     dataset="cifar10",
@@ -143,11 +143,11 @@ def main():
     #     early_stopping_min_delta=0.05,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("inception_v1_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("inception_v1_cifar10")
     # 70.78%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="inception_v2_cifar10",
     #     model="inception_v2",
     #     dataset="cifar10",
@@ -160,11 +160,11 @@ def main():
     #     early_stopping_min_delta=0.05,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("inception_v2_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("inception_v2_cifar10")
     # 74.07%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="dense_net_cifar10",
     #     model="dense_net_cifar",
     #     dataset="cifar10",
@@ -176,11 +176,11 @@ def main():
     #     early_stopping=True,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("dense_net_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("dense_net_cifar10")
     # 73.09%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="dense_net121_cifar10",
     #     model="dense_net121",
     #     dataset="cifar10",
@@ -193,11 +193,11 @@ def main():
     #     early_stopping_min_delta=0.05,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("dense_net121_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("dense_net121_cifar10")
     # 74.32%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="mobile_net_cifar10",
     #     model="mobile_net",
     #     dataset="cifar10",
@@ -209,11 +209,11 @@ def main():
     #     early_stopping=True,
     #     epochs=30,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("mobile_net_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("mobile_net_cifar10")
     # 72.96%
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="shuffle_net_v1_cifar10",
     #     model="shuffle_net_v1",
     #     dataset="cifar10",
@@ -224,10 +224,10 @@ def main():
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("shuffle_net_v1_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("shuffle_net_v1_cifar10")
 
-    # config = CNNConfig(
+    # config = ClassificationConfig(
     #     name="efficient_net_v1_b0_cifar10",
     #     model="efficient_net_v1_b0",
     #     dataset="cifar10",
@@ -240,11 +240,11 @@ def main():
     #     early_stopping_min_delta=0.05,
     #     epochs=100,
     # )
-    # CNNConfig.save_config(config)
-    # config = CNNConfig.load_config("efficient_net_v0_b1_cifar10")
+    # ClassificationConfig.save_config(config)
+    # config = ClassificationConfig.load_config("efficient_net_v0_b1_cifar10")
     # 77.92%
 
-    # pipeline = CNNPipeline(config)
+    # pipeline = ClassificationPipeline(config)
     # pipeline.run()
 
     # config = GANConfig(
@@ -378,66 +378,66 @@ def main():
     # pipeline = GANPipeline(config)
     # pipeline.run()
 
-    config = GANConfig(
-        name="real_esrgan_df2k_ost_extra_small",
-        model="real_esrgan",
-        model_params={
-            "beta": 0.2,
-            "rrdb_layers": 16,
-            "image_size": 48,
-        },
-        dataset="df2k_ost_small",
-        batch_size=64,
-        shuffle=True,
-        g_optimizer="adamw",
-        g_optimizer_params=AdamWParams(
-            lr=1e-4,
-            betas=(0.9, 0.999),
-            weight_decay=1e-2,
-        ),
-        d_optimizer="adamw",
-        d_optimizer_params=AdamWParams(
-            lr=5e-5,
-            betas=(0.9, 0.999),
-            weight_decay=1e-2,
-        ),
-        g_loss_function="srgan_generator_loss",
-        d_loss_function="esrgan_discriminator_loss",
-        epochs=50,
-        save_after_n_epoch=True,
-        save_after_n_epoch_period=1,
-        real_label=0.95,
-        early_stopping=True,
-        early_stopping_monitor="train_loss",
-        early_stopping_patience=5,
-        early_stopping_min_delta=-0.002,
-        early_stopping_min_delta_strategy="previous_proportional",
-        pretrain=True,
-        pretrain_epochs=5,
-        save_pretrained=True,
-        load_pretrained=True,
-    )
-    GANConfig.save_config(config)
+    # config = GANConfig(
+    #     name="real_esrgan_df2k_ost_extra_small",
+    #     model="real_esrgan",
+    #     model_params={
+    #         "beta": 0.2,
+    #         "rrdb_layers": 16,
+    #         "image_size": 48,
+    #     },
+    #     dataset="df2k_ost_small",
+    #     batch_size=64,
+    #     shuffle=True,
+    #     g_optimizer="adamw",
+    #     g_optimizer_params=AdamWParams(
+    #         lr=1e-4,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     d_optimizer="adamw",
+    #     d_optimizer_params=AdamWParams(
+    #         lr=5e-5,
+    #         betas=(0.9, 0.999),
+    #         weight_decay=1e-2,
+    #     ),
+    #     g_loss_function="srgan_generator_loss",
+    #     d_loss_function="esrgan_discriminator_loss",
+    #     epochs=50,
+    #     save_after_n_epoch=True,
+    #     save_after_n_epoch_period=1,
+    #     real_label=0.95,
+    #     early_stopping=True,
+    #     early_stopping_monitor="train_loss",
+    #     early_stopping_patience=5,
+    #     early_stopping_min_delta=-0.002,
+    #     early_stopping_min_delta_strategy="previous_proportional",
+    #     pretrain=True,
+    #     pretrain_epochs=5,
+    #     save_pretrained=True,
+    #     load_pretrained=True,
+    # )
+    # GANConfig.save_config(config)
     # config = GANConfig.load_config("real_esrgan_df2k_ost_small")
 
-    pipeline = GANPipeline(
-        config,
-        target_transform=transforms.Compose(
-            [
-                transforms.ToImage(),
-                transforms.Resize((48, 48)),
-                transforms.ToDtype(torch.float32, scale=True),
-            ]
-        ),
-        input_transform=transforms.Compose(
-            [
-                transforms.ToImage(),
-                transforms.Resize((48, 48)),
-                transforms.ToDtype(torch.float32, scale=True),
-            ]
-        ),
-    )
-    pipeline.run()
+    # pipeline = GANPipeline(
+    #     config,
+    #     target_transform=transforms.Compose(
+    #         [
+    #             transforms.ToImage(),
+    #             transforms.Resize((48, 48)),
+    #             transforms.ToDtype(torch.float32, scale=True),
+    #         ]
+    #     ),
+    #     input_transform=transforms.Compose(
+    #         [
+    #             transforms.ToImage(),
+    #             transforms.Resize((48, 48)),
+    #             transforms.ToDtype(torch.float32, scale=True),
+    #         ]
+    #     ),
+    # )
+    # pipeline.run()
 
     # config = DiffusionConfig(
     #     name="vae_mnist",
@@ -456,6 +456,8 @@ def main():
     #     save_after_n_epoch=True,
     #     save_after_n_epoch_period=10,
     # )
+    # DiffusionConfig.save_config(config)
+
     # pipeline = DiffusionPipeline(config)
     # pipeline.evaluate()
 

@@ -13,3 +13,5 @@ data/*
 weights/*
 
 .ruff_cache/
+
+node_modules/
