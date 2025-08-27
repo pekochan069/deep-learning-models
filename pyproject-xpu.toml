@@ -8,12 +8,16 @@ dependencies = [
     "datasets>=4.0.0",
     "einops>=0.8.1",
     "hf-xet>=1.1.7",
+    "litestar>=2.17.0",
+    "litestar-granian>=0.14.2",
+    "litestar-vite>=0.13.2",
     "matplotlib>=3.10.5",
     "numpy>=2.3.2",
     "opencv-python>=4.11.0.86",
     "pandas>=2.3.1",
     "polars>=1.32.2",
     "pydantic>=2.11.7",
+    "pydantic-tensor>=0.2.0",
     "pytorch-triton-xpu>=3.4.0",
     "safetensors>=0.6.1",
     "scipy>=1.16.1",
@@ -37,19 +41,10 @@ dev = [
 [tool.uv]
 
 [tool.poe.tasks]
+app = "uv run litestar --app app:app run"
 main = "main.py"
 format = "ruff format ."
 lint = "ruff check --fix ."
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu129"
-url = "https://download.pytorch.org/whl/cu129"
-explicit = true
 
 [[tool.uv.index]]
 name = "pytorch-xpu"
@@ -62,8 +57,10 @@ url = "https://pytorch-extension.intel.com/release-whl/stable/xpu/us"
 explicit = true
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu129" }]
-torchvision = [{ index = "pytorch-cu129" }]
+torch = [{ index = "pytorch-xpu" }]
+torchvision = [{ index = "pytorch-xpu" }]
+pytorch-triton-xpu = [{ index = "pytorch-xpu" }]
+intel-extension-for-pytorch = [{ index = "pytorch-extension-xpu" }]
 
 [tool.basedpyright]
 include = ["src"]

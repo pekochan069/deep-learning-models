@@ -4,8 +4,9 @@ import torch
 import torchvision.transforms.v2 as transforms
 
 from core.config import ClassificationConfig, DiffusionConfig, GANConfig
+from core.device import available_device
 from core.logger import init_logger
-from core.optimizer import AdamWParams
+from core.optimizer import AdamParams, AdamWParams
 from core.pipeline import ClassificationPipeline, DiffusionPipeline, GANPipeline
 
 
@@ -16,6 +17,7 @@ def main():
     init_logger("INFO")
 
     logger.info("Starting Deep Learning Models")
+    logger.info(f"Available device: {available_device()}")
 
     # config = ClassificationConfig(
     #     name="example_cnn",
@@ -23,7 +25,7 @@ def main():
     #     dataset="mnist",
     #     batch_size=64,
     #     optimizer="adam",
-    #     optimizer_params={"lr": 0.001},
+    #     optimizer_params=AdamParams(lr=0.001),
     #     loss_function="cross_entropy",
     #     epochs=15,
     # )
