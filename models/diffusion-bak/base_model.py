@@ -1,38 +1,30 @@
 import time
-from typing import Any, final, override
+from typing import Any, override
+
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchinfo import summary
 from torch.utils.data import DataLoader
+from torchinfo import summary
 from tqdm import tqdm
 
-from ..base_model import BaseModel
-from core.config import ClassificationConfig
+from core.config import DiffusionConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model, save_model
+from models.classification.base_model import History
+from models.base_model import BaseModel
 
 
-@final
-class History:
-    train_loss: list[float]
-    val_loss: list[float]
-
-    def __init__(self):
-        self.train_loss = []
-        self.val_loss = []
-
-
-class ClassificationBaseModel(BaseModel):
-    config: ClassificationConfig
+class DiffusionBaseModel(BaseModel):
+    config: DiffusionConfig
     history: History
 
-    def __init__(self, config: ClassificationConfig):
-        super(ClassificationBaseModel, self).__init__("Classification")
-        self.config = config
+    def __init__(self, config: DiffusionConfig):
+        super(DiffusionBaseModel, self).__init__("Diffusion")
 
+        self.config = config
         self.history = History()
 
     @override
@@ -42,19 +34,11 @@ class ClassificationBaseModel(BaseModel):
         save_model(self, name)
 
     @override
-    def to_cpu(self):
-        _ = self.to(self.device_cpu)
-
-    @override
-    def to_device(self):
-        _ = self.to(self.device)
-
-    @override
     def load(self):
         """Load the model and update weights."""
         loaded_model = load_model(self, self.config.name)
         if loaded_model is None:
-            self.logger.error(f"Model {self.config.name} not found.")
+            self.logger.info(f"Model {self.config.name} not found.")
             return
         _ = self.load_state_dict(loaded_model.state_dict())
         _ = self.to(self.device)
@@ -68,7 +52,6 @@ class ClassificationBaseModel(BaseModel):
         loss_function: nn.Module,
     ) -> float:
         """Train the model."""
-        _ = self.train()
         epoch_loss = 0.0
         for batch in tqdm(train_loader, desc="Training"):
             inputs, targets = batch
@@ -83,7 +66,6 @@ class ClassificationBaseModel(BaseModel):
             optimizer.step()
 
             epoch_loss += loss.item()
-        _ = self.train(False)
 
         return epoch_loss / len(train_loader)
 
@@ -119,6 +101,7 @@ class ClassificationBaseModel(BaseModel):
         )
         start = time.time()
         _ = self.to(self.device)
+        _ = self.train()
 
         optimizer = get_optimizer(self.config.optimizer)(
             self.parameters(), **self.config.optimizer_params.to_kwargs()
@@ -250,6 +233,8 @@ class ClassificationBaseModel(BaseModel):
                 self.logger.info(f"Early stopping triggered after {epoch} epochs.")
                 break
 
+        _ = self.train(False)
+
         end = time.time()
         self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
 
@@ -258,6 +243,7 @@ class ClassificationBaseModel(BaseModel):
         self, data_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]
     ) -> Any:
         """Evaluate the model on the provided data loader."""
+        _ = self.to(self.device)
         _ = self.eval()
         correct = 0
         total = 0

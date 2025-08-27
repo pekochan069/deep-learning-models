@@ -1,124 +1,68 @@
+from abc import ABC
 import time
-from typing import Any, final, override
+from typing import override
+
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torchinfo import summary
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from torchinfo import summary
 
-from ..base_model import BaseModel
-from core.config import ClassificationConfig
+from core.config import DiffusionConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model, save_model
+from ..base_model import DiffusionBaseModel
 
 
-@final
-class History:
-    train_loss: list[float]
-    val_loss: list[float]
+class VAEBaseModel(DiffusionBaseModel, ABC):
+    encoder: nn.Module
+    decoder: nn.Module
 
-    def __init__(self):
-        self.train_loss = []
-        self.val_loss = []
-
-
-class ClassificationBaseModel(BaseModel):
-    config: ClassificationConfig
-    history: History
-
-    def __init__(self, config: ClassificationConfig):
-        super(ClassificationBaseModel, self).__init__("Classification")
-        self.config = config
-
-        self.history = History()
+    def __init__(self, config: DiffusionConfig):
+        super(VAEBaseModel, self).__init__(config)
 
     @override
     def save(self, name: str | None = None):
         """Save the model."""
         name = name or self.config.name
-        save_model(self, name)
-
-    @override
-    def to_cpu(self):
-        _ = self.to(self.device_cpu)
-
-    @override
-    def to_device(self):
-        _ = self.to(self.device)
+        save_model(self.encoder, f"{name}-encoder")
+        save_model(self.decoder, f"{name}-decoder")
 
     @override
     def load(self):
         """Load the model and update weights."""
-        loaded_model = load_model(self, self.config.name)
-        if loaded_model is None:
-            self.logger.error(f"Model {self.config.name} not found.")
+        loaded_encoder = load_model(self.encoder, f"{self.config.name}-encoder")
+        loaded_decoder = load_model(self.decoder, f"{self.config.name}-decoder")
+        if loaded_encoder is None or loaded_decoder is None:
+            self.logger.info(f"Model {self.config.name} not found.")
             return
-        _ = self.load_state_dict(loaded_model.state_dict())
-        _ = self.to(self.device)
+        _ = self.encoder.load_state_dict(loaded_encoder.state_dict())
+        _ = self.decoder.load_state_dict(loaded_decoder.state_dict())
         self.logger.info(f"Model {self.config.name} loaded successfully.")
 
     @override
-    def train_epoch(
-        self,
-        train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
-        optimizer: optim.Optimizer,
-        loss_function: nn.Module,
-    ) -> float:
-        """Train the model."""
-        _ = self.train()
-        epoch_loss = 0.0
-        for batch in tqdm(train_loader, desc="Training"):
-            inputs, targets = batch
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
-
-            optimizer.zero_grad()
-            outputs = self(inputs)
-
-            loss = loss_function(outputs, targets)
-            loss.backward()
-            optimizer.step()
-
-            epoch_loss += loss.item()
-        _ = self.train(False)
-
-        return epoch_loss / len(train_loader)
+    def to_cpu(self):
+        _ = self.to(self.device_cpu)
+        _ = self.encoder.to(self.device_cpu)
+        _ = self.decoder.to(self.device_cpu)
 
     @override
-    def validate_epoch(
-        self,
-        val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
-        loss_function: nn.Module,
-    ) -> float:
-        """Evaluate the model."""
-        _ = self.eval()
-        epoch_loss = 0.0
-        with torch.no_grad():
-            for batch in tqdm(val_loader, desc="Validating"):
-                inputs, targets = batch
-                inputs = inputs.to(self.device)
-                targets = targets.to(self.device)
-
-                outputs = self(inputs)
-                loss = loss_function(outputs, targets)
-                epoch_loss += loss.item()
-
-        return epoch_loss / len(val_loader)
+    def to_device(self):
+        _ = self.to(self.device)
+        _ = self.encoder.to(self.device)
+        _ = self.decoder.to(self.device)
 
     @override
     def fit(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
         val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]] | None = None,
-    ):
+    ) -> None:
         self.logger.info(
             f"Training {self.config.model} on {self.config.dataset} dataset"
         )
-        start = time.time()
-        _ = self.to(self.device)
+        start = time.time()  # noqa: F821
 
         optimizer = get_optimizer(self.config.optimizer)(
             self.parameters(), **self.config.optimizer_params.to_kwargs()
@@ -250,40 +194,10 @@ class ClassificationBaseModel(BaseModel):
                 self.logger.info(f"Early stopping triggered after {epoch} epochs.")
                 break
 
+        _ = self.train(False)
+
         end = time.time()
         self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
-
-    @override
-    def predict(
-        self, data_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]]
-    ) -> Any:
-        """Evaluate the model on the provided data loader."""
-        _ = self.eval()
-        correct = 0
-        total = 0
-
-        with torch.no_grad():
-            for batch in tqdm(data_loader, desc="Predicting"):
-                inputs, targets = batch
-                inputs = inputs.to(self.device)
-                targets = targets.to(self.device)
-
-                outputs = self(inputs)
-                predictions = torch.argmax(outputs, dim=1)
-
-                total += targets.size(0)
-                correct += (predictions == targets).sum().item()
-
-        accuracy = (correct / total) * 100
-        self.logger.info(f"Test Accuracy: {accuracy:.2f}%")
-
-    def process_output(self, output: torch.Tensor) -> torch.Tensor:
-        """Process the model output."""
-        return output.cpu()
-
-    @override
-    def summary(self, input_size: tuple[int, int, int, int]):
-        _ = summary(self, input_size=input_size)
 
     @override
     def plot_history(self, show: bool, save: bool):

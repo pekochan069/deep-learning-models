@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 from typing import TypeVar
 
 import torch
@@ -16,21 +16,23 @@ class BaseModel(ABC, nn.Module):
     """Base class for all Deep Learning models. All base models should inherit from this class.
 
     Usage:
-        class TaskBaseModel(BaseModel):
-            def __init__(self, ...):
-                super(TaskBaseModel, self).__init__("TaskName")
-                # Initialize your model here
+            class TaskBaseModel(BaseModel):
+                    def __init__(self, ...):
+                            super(TaskBaseModel, self).__init__("TaskName")
+                            # Initialize your model here
 
     Args:
-        ABC (_type_): _description_
+            ABC (_type_): _description_
     """
 
     device: torch.device
+    device_cpu: torch.device
     logger: logging.Logger
 
     def __init__(self, logger_name: str):
         super(BaseModel, self).__init__()
         self.device = get_device()
+        self.device_cpu = torch.device("cpu")
         self.logger = logging.getLogger(logger_name)
 
     @abstractmethod
@@ -39,6 +41,14 @@ class BaseModel(ABC, nn.Module):
 
     @abstractmethod
     def load(self):
+        pass
+
+    @abstractmethod
+    def to_device(self):
+        pass
+
+    @abstractmethod
+    def to_cpu(self):
         pass
 
     @abstractmethod
