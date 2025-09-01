@@ -1,0 +1,41 @@
+{
+    "name": "cfg_vq_vae_padded_mnist",
+    "dataset": "padded_mnist",
+    "batch_size": 32,
+    "shuffle": true,
+    "epochs": 50,
+    "early_stopping": false,
+    "early_stopping_monitor": "val_loss",
+    "early_stopping_patience": 5,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_min_delta_strategy": "fixed",
+    "save_after_n_epoch": false,
+    "save_after_n_epoch_period": 1,
+    "show_plot": true,
+    "save_plot": true,
+    "model": "cfg_vq_vae",
+    "model_params": {
+        "param_type": "cfg_vq_vae",
+        "encoder_embedding_dim": 8,
+        "vector_dim": 512,
+        "embedding_dim": 64,
+        "beta": 0.25,
+        "gamma": 0.99
+    },
+    "optimizer": "adamw",
+    "optimizer_params": {
+        "param_type": "adamw",
+        "lr": 0.0003,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
+    },
+    "loss_function": "vq_vae_loss"
+}

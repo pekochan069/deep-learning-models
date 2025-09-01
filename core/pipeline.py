@@ -1,6 +1,6 @@
-from abc import ABCMeta, abstractmethod
 import gc
 import logging
+from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, final, override
 
 import torch
@@ -51,13 +51,18 @@ class ClassificationPipeline(Pipeline):
     model: ClassificationBaseModel
     dataset: TrainableDataset
 
-    def __init__(self, config: ClassificationConfig):
+    def __init__(self, config: ClassificationConfig, load: bool = True):
         super(ClassificationPipeline, self).__init__(
             logger_name="ClassificationPipeline"
         )
         self.config = config
         self.model = get_classification_model(self.config)
         self.dataset = get_dataset(self.config)
+
+        if load:
+            self.model.load()
+
+        self.model.to_device()
 
     @override
     def train(self):
@@ -74,6 +79,8 @@ class ClassificationPipeline(Pipeline):
         # Display model summary
         if self.config.dataset in ["mnist", "fashion_mnist"]:
             input_size = (1, 1, 28, 28)
+        elif self.config.dataset in ["padded_mnist"]:
+            input_size = (1, 1, 32, 32)
         elif self.config.dataset in ["cifar10", "cifar100"]:
             input_size = (1, 3, 32, 32)
         else:  # imagenet, mini_imagenet
@@ -128,6 +135,7 @@ class GANPipeline(Pipeline):
         config: GANConfig,
         target_transform: Callable[[Any], torch.Tensor] | None = None,
         input_transform: Callable[[Any], torch.Tensor] | None = None,
+        load: bool = True,
     ):
         super(GANPipeline, self).__init__(logger_name="GANPipeline")
         self.config = config
@@ -135,6 +143,11 @@ class GANPipeline(Pipeline):
         self.dataset = get_dataset(
             self.config, transform=target_transform, input_transform=input_transform
         )
+
+        if load:
+            self.model.load()
+
+        self.model.to_device()
 
     def pretrain(self):
         self.logger.info(f"Starting pre-training for GAN model {self.config.name}")
@@ -243,12 +256,28 @@ class DiffusionPipeline(Pipeline):
     model: DiffusionBaseModel
     dataset: TrainableDataset
 
-    def __init__(self, config: DiffusionConfig):
+    def __init__(self, config: DiffusionConfig, load: bool = True):
         super(DiffusionPipeline, self).__init__("DiffusionPipeline")
 
         self.config = config
         self.model = get_diffusion_model(self.config)
         self.dataset = get_dataset(self.config)
+
+        # Display model summary
+        if self.config.dataset in ["mnist", "fashion_mnist"]:
+            input_size = (1, 1, 28, 28)
+        elif self.config.dataset in ["padded_mnist"]:
+            input_size = (1, 1, 32, 32)
+        elif self.config.dataset in ["cifar10", "cifar100"]:
+            input_size = (1, 3, 32, 32)
+        else:  # imagenet, mini_imagenet
+            input_size = (1, 3, 224, 224)
+        self.model.summary(input_size)
+
+        if load:
+            self.model.load()
+
+        self.model.to_device()
 
     @override
     def train(self):
@@ -262,16 +291,6 @@ class DiffusionPipeline(Pipeline):
             f"Training Steps: {len(self.dataset.train) * self.config.epochs}"
         )
 
-        # Display model summary
-        if self.config.dataset in ["mnist", "fashion_mnist"]:
-            input_size = (1, 1, 28, 28)
-        elif self.config.dataset in ["cifar10", "cifar100"]:
-            input_size = (1, 3, 32, 32)
-        else:  # imagenet, mini_imagenet
-            input_size = (1, 3, 224, 224)
-
-        self.model.summary(input_size)
-
         # Train the model
         self.model.fit(self.dataset.train, self.dataset.val)
 
@@ -281,29 +300,23 @@ class DiffusionPipeline(Pipeline):
         # Save the trained model
         self.model.save()
 
-        # Evaluate on test set
-        self.model.predict(self.dataset.test)
-
         self.logger.info(f"Training pipeline completed for {self.config.name}")
         self.clean()
 
     @override
-    def evaluate(self):
+    def evaluate(self, *args, **kwargs):
         """Evaluate a trained model."""
         self.logger.info(f"Loading and evaluating model {self.config.name}")
 
-        # Load the trained model
-        self.model.load()
-
         # Evaluate on test set
-        self.model.predict(self.dataset.test)
+        self.model.predict(*args, **kwargs)
 
         self.logger.info(f"Evaluation completed for {self.config.name}")
         self.clean()
 
     @override
-    def run(self):
+    def run(self, *args, **kwargs):
         """Run the complete pipeline: train and evaluate."""
         self.train()
-        self.evaluate()
+        self.evaluate(*args, **kwargs)
         self.logger.info(f"Full pipeline completed for {self.config.name}")

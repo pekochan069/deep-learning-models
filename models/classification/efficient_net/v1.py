@@ -190,7 +190,11 @@ class EfficientNetV1(ClassificationBaseModel):
 
         layers, layers_out_channels = get_layers(width_multiplier, depth_multiplier)
 
-        if config.dataset == "cifar10" or config.dataset == "cifar100":
+        if (
+            config.dataset == "cifar10"
+            or config.dataset == "cifar100"
+            or config.dataset == "padded_mnist"
+        ):
             self.conv1 = nn.Conv2d(
                 in_channels=3,
                 out_channels=32,

@@ -1,6 +1,10 @@
-from typing import final, override
+from typing import final, override, Literal
+
 import torch
 import torch.nn as nn
+from pydantic import ConfigDict
+
+from core.pydantic import ParametersBase
 
 
 @final
@@ -30,3 +34,8 @@ class GANDiscriminatorLoss(nn.Module):
         )
 
         return (d_x_loss + d_g_z_loss) / 2
+
+
+class GANDiscriminatorLossParams(ParametersBase):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    param_type: Literal["gan_discriminator_loss"] = "gan_discriminator_loss"

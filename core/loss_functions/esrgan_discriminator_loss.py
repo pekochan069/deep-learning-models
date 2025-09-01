@@ -1,7 +1,11 @@
-from typing import final, override
+from typing import final, override, Literal
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from pydantic import ConfigDict
+
+from core.pydantic import ParametersBase
 
 
 @final
@@ -35,3 +39,8 @@ class ESRGANDiscriminatorLoss(nn.Module):
         )
 
         return (d_real_loss + d_fake_loss) / 2
+
+
+class ESRGANDiscriminatorLossParams(ParametersBase):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    param_type: Literal["esrgan_discriminator_loss"] = "esrgan_discriminator_loss"

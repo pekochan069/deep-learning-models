@@ -1,0 +1,34 @@
+{
+    "name": "efficient_net_v1_b0_padded_mnist",
+    "dataset": "padded_mnist",
+    "batch_size": 128,
+    "shuffle": true,
+    "epochs": 50,
+    "early_stopping": false,
+    "early_stopping_monitor": "val_loss",
+    "early_stopping_patience": 5,
+    "early_stopping_min_delta": 0.0,
+    "early_stopping_min_delta_strategy": "fixed",
+    "save_after_n_epoch": false,
+    "save_after_n_epoch_period": 1,
+    "show_plot": true,
+    "save_plot": true,
+    "model": "efficient_net_v1_b0",
+    "model_params": {},
+    "optimizer": "adamw",
+    "optimizer_params": {
+        "param_type": "adamw",
+        "lr": 0.001,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "eps": 1e-08,
+        "weight_decay": 0.01,
+        "amsgrad": false,
+        "maximize": false,
+        "capturable": false,
+        "differentiable": false
+    },
+    "loss_function": "cross_entropy"
+}

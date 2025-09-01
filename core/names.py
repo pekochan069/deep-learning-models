@@ -3,6 +3,7 @@ from typing import Literal
 
 DatasetName = Literal[
     "mnist",
+    "padded_mnist",
     "cifar10",
     "cifar100",
     "fashion_mnist",
@@ -52,8 +53,11 @@ GANModelName = Literal[
     "real_esrgan",
 ]
 DiffusionModelName = Literal[
-    "ddpm",
-    "vae",
+    "simple_vae",
+    "cvae",
+    "conditional_cvae",
+    "cfg_cvae",
+    "cfg_vq_vae",
 ]
 LossFunctionName = Literal[
     "l1",
@@ -81,6 +85,8 @@ LossFunctionName = Literal[
     "srgan_generator_loss",
     "esrgan_discriminator_loss",
     "vae_loss",
+    "beta_vae_loss",
+    "vq_vae_loss",
 ]
 OptimizerName = Literal[
     "adafactor",

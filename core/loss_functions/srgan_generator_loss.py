@@ -1,8 +1,11 @@
-from typing import final, override
+from typing import Literal, final, override
 
 import torch
 import torch.nn as nn
 import torchvision.models as models  # pyright: ignore[reportMissingTypeStubs]
+from pydantic import ConfigDict
+
+from core.pydantic import ParametersBase
 
 
 @final
@@ -165,3 +168,8 @@ class SRGANGeneratorLoss(nn.Module):
         return self.content_loss(x, g_z) + 1e-3 * self.adversarial_loss(
             d_g_z, torch.ones_like(d_g_z)
         )
+
+
+class SRGANGeneratorLossParams(ParametersBase):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    param_type: Literal["srgan_generator_loss"] = "srgan_generator_loss"

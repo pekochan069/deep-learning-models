@@ -2,12 +2,16 @@ from typing import Any
 
 import torch.nn as nn
 
-from core.loss_functions.vae_loss import VAELoss
-
 from .names import LossFunctionName
-from .loss_functions.gan_discriminator_loss import GANDiscriminatorLoss
-from .loss_functions.srgan_generator_loss import SRGANGeneratorLoss
-from .loss_functions.esrgan_discriminator_loss import ESRGANDiscriminatorLoss
+from .loss_functions import (
+    GANDiscriminatorLoss,
+    SRGANGeneratorLoss,
+    ESRGANGeneratorLoss,
+    ESRGANDiscriminatorLoss,
+    VAELoss,
+    BetaVAELoss,
+    VQVAELoss,
+)
 
 
 def get_loss_function(name: LossFunctionName, params: dict[str, Any] | None = None):
@@ -65,3 +69,7 @@ def get_loss_function(name: LossFunctionName, params: dict[str, Any] | None = No
             return ESRGANDiscriminatorLoss(**params)
         case "vae_loss":
             return VAELoss(**params)
+        case "beta_vae_loss":
+            return BetaVAELoss(**params)
+        case "vq_vae_loss":
+            return VQVAELoss(**params)

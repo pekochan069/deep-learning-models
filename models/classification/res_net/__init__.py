@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from core.config import ClassificationConfig
-from core.dataset import get_num_classes
+from core.dataset import get_channels, get_num_classes
 from ..base_model import ClassificationBaseModel
 
 
@@ -129,11 +129,16 @@ class ResNet(ClassificationBaseModel):
         is_large_model: bool = False,
     ):
         super(ResNet, self).__init__(config)
+        self.channels = get_channels(self.config.dataset)
         self.num_classes = get_num_classes(self.config.dataset)
 
         self.layer1 = nn.Sequential(
             nn.Conv2d(
-                in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3
+                in_channels=self.channels,
+                out_channels=64,
+                kernel_size=7,
+                stride=2,
+                padding=3,
             ),
             nn.BatchNorm2d(64),
             nn.ReLU(),

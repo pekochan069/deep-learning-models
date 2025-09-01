@@ -1,9 +1,11 @@
-from typing import final, override
+from typing import final, override, Literal
 
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from pydantic import ConfigDict
 
+from core.pydantic import ParametersBase
 from core.loss_functions.esrgan_discriminator_loss import ESRGANDiscriminatorLoss  # pyright: ignore[reportMissingTypeStubs]
 
 
@@ -174,3 +176,8 @@ class ESRGANGeneratorLoss(nn.Module):
             + 5e-3 * self.adversarial_loss(d_g_z, torch.ones_like(d_g_z))
             + 1e-2 * self.pointwise_loss(g_z, x)
         )
+
+
+class ESRGANGeneratorLossParams(ParametersBase):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    param_type: Literal["esrgan_generator_loss"] = "esrgan_generator_loss"

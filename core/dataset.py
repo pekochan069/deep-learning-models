@@ -24,10 +24,22 @@ from core.fs import scan_files
 logger = logging.getLogger("Dataset")
 
 
+def get_image_size(dataset_name: DatasetName) -> int:
+    match dataset_name:
+        case "mnist" | "fashion_mnist":
+            return 28
+        case "padded_mnist" | "cifar10" | "cifar100":
+            return 32
+        case "imagenet" | "mini_imagenet":
+            return 224
+        case "df2k_ost" | "df2k_ost_small":
+            return 96
+
+
 def get_num_classes(dataset_name: DatasetName) -> int:
     """데이터셋별 클래스 수를 반환합니다."""
     match dataset_name:
-        case "mnist" | "fashion_mnist" | "cifar10":
+        case "mnist" | "padded_mnist" | "fashion_mnist" | "cifar10":
             return 10
         case "cifar100" | "mini_imagenet":
             return 100
@@ -35,6 +47,14 @@ def get_num_classes(dataset_name: DatasetName) -> int:
             return 1000
         case _:
             return 0
+
+
+def get_channels(dataset_name: DatasetName) -> int:
+    match dataset_name:
+        case "mnist" | "padded_mnist":
+            return 1
+        case _:
+            return 3
 
 
 @dataclass
@@ -116,6 +136,8 @@ def get_dataset(
     match name:
         case "mnist":
             return mnist(batch_size, shuffle, transform)
+        case "padded_mnist":
+            return padded_mnist(batch_size, shuffle, transform)
         case "cifar10":
             return cifar10(batch_size, shuffle, transform)
         case "cifar100":
@@ -151,9 +173,43 @@ def mnist(
     train = datasets.MNIST("data", download=True, transform=transform, train=True)
     test = datasets.MNIST("data", download=True, transform=transform, train=False)
 
+    validation = int(0.1 * len(train))
+    train_set, val_set = random_split(train, [len(train) - validation, validation])
+
     return TrainableDataset(
-        train=DataLoader(train, batch_size=batch_size, shuffle=shuffle),
+        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
         test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
+    )
+
+
+def padded_mnist(
+    batch_size: int,
+    shuffle: bool,
+    transform: Callable[[Any], torch.Tensor] | None = None,
+):
+    if transform is None:
+        logger.info("Using default transform for Padded MNIST")
+        transform = transforms.Compose(
+            [
+                transforms.ToImage(),
+                transforms.ToDtype(torch.float32, scale=True),
+                transforms.Pad(2),
+            ]
+        )
+    else:
+        logger.info("Using custom transform for Padded MNIST")
+
+    train = datasets.MNIST("data", download=True, transform=transform, train=True)
+    test = datasets.MNIST("data", download=True, transform=transform, train=False)
+
+    validation = int(0.1 * len(train))
+    train_set, val_set = random_split(train, [len(train) - validation, validation])
+
+    return TrainableDataset(
+        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
+        test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
     )
 
 

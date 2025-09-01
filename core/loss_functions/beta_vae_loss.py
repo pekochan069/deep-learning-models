@@ -1,16 +1,18 @@
-from typing import Literal, final, override
+from typing import final, override, Literal
 
-from pydantic import ConfigDict
 import torch
 import torch.nn as nn
+from pydantic import ConfigDict
 
 from core.pydantic import ParametersBase
 
 
 @final
-class VAELoss(nn.Module):
-    def __init__(self):
-        super(VAELoss, self).__init__()
+class BetaVAELoss(nn.Module):
+    def __init__(self, beta: float):
+        super(BetaVAELoss, self).__init__()
+
+        self.beta = beta
 
         self.mse = nn.MSELoss(reduction="sum")
 
@@ -23,11 +25,11 @@ class VAELoss(nn.Module):
         sigma: torch.Tensor,
     ) -> torch.Tensor:
         l1 = self.mse(x, x_hat)
-        l2 = torch.sum(1 + torch.log(sigma**2) - mu**2 - sigma**2)
+        l2 = self.beta * torch.sum(1 + torch.log(sigma**2) - mu**2 - sigma**2)
 
         return (l1 - l2) / (2 * len(x))
 
 
-class VAELossParams(ParametersBase):
+class BetaVAELossParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["vae_loss"] = "vae_loss"
+    param_type: Literal["beta_vae_loss"] = "beta_vae_loss"

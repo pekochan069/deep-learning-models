@@ -8,6 +8,13 @@ from core.device import available_device
 from core.logger import init_logger
 from core.optimizer import AdamParams, AdamWParams
 from core.pipeline import ClassificationPipeline, DiffusionPipeline, GANPipeline
+from core.model_params.diffusion_model_params import (
+    CFGCVAEParams,
+    CFGVQVAEParams,
+    CVAEParams,
+    ConditionalCVAEParams,
+    SimpleVAEParams,
+)
 
 
 logger = logging.getLogger("main")
@@ -131,6 +138,19 @@ def main():
     # ClassificationConfig.save_config(config)
     # config = ClassificationConfig.load_config("res_net50_cifar10")
     # 71.44%
+
+    # config = ClassificationConfig(
+    #     name="res_net32_padded_mnist2",
+    #     model="res_net34",
+    #     dataset="padded_mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     epochs=10,
+    #     optimizer="adamw",
+    #     optimizer_params=AdamWParams(),
+    #     loss_function="cross_entropy",
+    # )
+    # ClassificationConfig.save_config(config)
 
     # config = ClassificationConfig(
     #     name="inception_v1_cifar10",
@@ -442,26 +462,78 @@ def main():
     # pipeline.run()
 
     # config = DiffusionConfig(
-    #     name="vae_mnist",
-    #     model="vae",
+    #     name="simple_vae_mnist",
+    #     model="simple_vae",
+    #     model_params=SimpleVAEParams(hidden_dim=200, latent_dim=20),
     #     dataset="mnist",
     #     batch_size=128,
     #     shuffle=True,
     #     optimizer="adam",
     #     optimizer_params=AdamWParams(lr=3e-4),
     #     loss_function="vae_loss",
-    #     early_stopping=True,
-    #     early_stopping_monitor="train_loss",
-    #     early_stopping_min_delta=-0.002,
-    #     early_stopping_min_delta_strategy="previous_proportional",
-    #     epochs=100,
-    #     save_after_n_epoch=True,
-    #     save_after_n_epoch_period=10,
+    #     epochs=30,
     # )
     # DiffusionConfig.save_config(config)
 
-    # pipeline = DiffusionPipeline(config)
-    # pipeline.evaluate()
+    # config = DiffusionConfig(
+    #     name="cvae_mnist",
+    #     model="cvae",
+    #     model_params=CVAEParams(),
+    #     dataset="mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     optimizer="adam",
+    #     optimizer_params=AdamWParams(lr=3e-4),
+    #     loss_function="vae_loss",
+    #     epochs=50,
+    # )
+    # DiffusionConfig.save_config(config)
+
+    # config = DiffusionConfig(
+    #     name="conditional_cvae_padded_mnist",
+    #     model="conditional_cvae",
+    #     model_params=ConditionalVAEParams(),
+    #     dataset="padded_mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     optimizer="adamw",
+    #     optimizer_params=AdamWParams(lr=3e-4),
+    #     loss_function="vae_loss",
+    #     epochs=50,
+    # )
+    # DiffusionConfig.save_config(config)
+
+    # config = DiffusionConfig(
+    #     name="cfg_cvae_padded_mnist",
+    #     model="cfg_cvae",
+    #     model_params=CFGCVAEParams(),
+    #     dataset="padded_mnist",
+    #     batch_size=128,
+    #     shuffle=True,
+    #     optimizer="adamw",
+    #     optimizer_params=AdamWParams(lr=3e-4),
+    #     loss_function="vae_loss",
+    #     epochs=50,
+    # )
+    # DiffusionConfig.save_config(config)
+
+    config = DiffusionConfig(
+        name="cfg_vq_vae_padded_mnist",
+        model="cfg_vq_vae",
+        model_params=CFGVQVAEParams(),
+        dataset="padded_mnist",
+        batch_size=32,
+        shuffle=True,
+        optimizer="adamw",
+        optimizer_params=AdamWParams(lr=3e-4),
+        loss_function="vq_vae_loss",
+        epochs=50,
+    )
+    DiffusionConfig.save_config(config)
+
+    pipeline = DiffusionPipeline(config)
+    # pipeline.train()
+    pipeline.evaluate(guidance_scale=2.5)
 
 
 if __name__ == "__main__":

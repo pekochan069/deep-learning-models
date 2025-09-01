@@ -4,8 +4,8 @@ import os
 from typing import Any, Literal, Self
 from pydantic import BaseModel as PydanticBaseModel
 
-from core.optimizer import AdamWParams, OptimizerParams
-
+from .optimizer import AdamWParams, OptimizerParams
+from .model_params import DiffusionModelParams
 from .names import (
     DatasetName,
     ClassificationModelName,
@@ -91,7 +91,7 @@ class GANConfig(Config):
 
 class DiffusionConfig(Config):
     model: DiffusionModelName
-    model_params: dict[str, Any] = {}
+    model_params: DiffusionModelParams
     optimizer: OptimizerName
     optimizer_params: OptimizerParams
     loss_function: LossFunctionName

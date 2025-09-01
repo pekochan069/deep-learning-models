@@ -162,9 +162,6 @@ class SimpleVAE(VAEBaseModel):
 
     @override
     def predict(self, batch_size: int = 64):
-        self.logger.info(
-            f"Training {self.config.model} on {self.config.dataset} dataset"
-        )
         _ = self.eval()
 
         with torch.no_grad():
