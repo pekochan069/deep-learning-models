@@ -50,6 +50,7 @@ class DDPMParams(ParametersBase):
     max_t: int = 1000
     beta_1: float = 1e-4
     beta_t: float = 0.02
+    cfg_unconditional_prob: float = 0.1
 
 
 DiffusionModelParams = Annotated[

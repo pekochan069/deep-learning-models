@@ -1,3 +1,5 @@
+# pyright: reportIndexIssue=false, reportCallIssue=false
+
 from typing import final, override
 
 import numpy as np
@@ -14,6 +16,9 @@ class SinusoidalPositionalEmbedding(nn.Module):
         base: float = 10000,
     ):
         super(SinusoidalPositionalEmbedding, self).__init__()
+        assert d % 2 == 0
+
+        self.d = d
 
         pe = torch.zeros(max_len, d)
         p = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
@@ -25,13 +30,46 @@ class SinusoidalPositionalEmbedding(nn.Module):
         pe[:, 0::2] = torch.sin(x)
         pe[:, 1::2] = torch.cos(x)
 
-        pe = pe.unsqueeze(0).transpose(0, 1)
+        # pe = pe.unsqueeze(0).transpose(0, 1)
 
         self.register_buffer("pe", pe, persistent=False)
 
+    # made by chatgpt
     @override
-    def forward(self, seq_len: int):
-        return self.pe[:seq_len, :]  # pyright: ignore[reportIndexIssue]
+    def forward(self, t: torch.Tensor):
+        # return self.pe[:seq_len, :]
+        if t.dtype in (
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+            torch.uint8,
+            torch.uint16,
+            torch.uint32,
+            torch.uint64,
+        ):
+            index = t.long().flatten()
+
+            # numel - 요소 개수
+            if index.numel() > 0 and index.max() < self.pe.size(0) and index.min() >= 0:
+                embedding = self.pe.index_select(0, index)
+                return embedding.view(*t.size, self.d)  # pyright: ignore[reportGeneralTypeIssues]
+
+        t = t.to(dtype=torch.float32)
+        orig_shape = t.shape
+        t = t.view(-1)  # (N,)
+
+        half = self.d // 2
+        # freq = base^{-k/half}, k=0..half-1
+        k = torch.arange(0, half, device=t.device, dtype=t.dtype)
+        freqs = torch.exp(
+            -torch.log(torch.tensor(self.base, device=t.device, dtype=t.dtype))
+            * (k / half)
+        )
+        args = t[:, None] * freqs[None, :]  # (N, half)
+
+        emb = torch.cat([torch.sin(args), torch.cos(args)], dim=-1)  # (N, d)
+        return emb.view(*orig_shape, self.d)
 
 
 @final

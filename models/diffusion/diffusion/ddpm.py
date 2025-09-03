@@ -1,3 +1,5 @@
+# pyright: reportIndexIssue=false
+
 from typing import final, override
 
 import numpy as np
@@ -14,19 +16,6 @@ from core.modules import SinusoidalPositionalEmbedding
 from core.weights import load_model, save_model
 from ..base_model import DiffusionBaseModel
 
-_log_10000 = np.log(10000)
-
-
-def sinusoidal_positional_embedding(p: int, i: int, d: int, device: torch.device):
-    x = p * np.exp((-2 * i / d) * _log_10000)
-
-    if i % 2 == 0:
-        y = np.sin(x)
-    else:
-        y = np.cos(x)
-
-    return torch.Tensor(y, device=device)
-
 
 @final
 class SelfAttention(nn.Module):
@@ -40,19 +29,27 @@ class SelfAttention(nn.Module):
 
 @final
 class ResBlock(nn.Module):
-    def __init__(self, in_dim: int, out_dim: int, dropout_rate: float = 0.1):
+    def __init__(
+        self, in_dim: int, out_dim: int, t_emb_dim: int, dropout_rate: float = 0.1
+    ):
         super(ResBlock, self).__init__()
+        assert in_dim > 3
 
-        num_groups = min(32, out_dim // 4)
+        self.embedding_projection = nn.Sequential(
+            nn.SiLU(),
+            nn.Linear(t_emb_dim, out_dim, bias=False),
+        )
 
-        self.sequential = nn.Sequential(
+        self.conv1 = nn.Sequential(
+            nn.GroupNorm(min(32, in_dim // 4), in_dim),
+            nn.SiLU(),
             nn.Conv2d(in_dim, out_dim, 3, 1, 1, bias=False),
-            nn.GroupNorm(num_groups, in_dim),
+        )
+        self.dropout = nn.Dropout(dropout_rate)
+        self.conv2 = nn.Sequential(
+            nn.GroupNorm(min(32, out_dim // 4), out_dim),
             nn.SiLU(),
-            nn.Dropout(dropout_rate),
             nn.Conv2d(out_dim, out_dim, 3, 1, 1, bias=False),
-            nn.GroupNorm(num_groups, in_dim),
-            nn.SiLU(),
         )
 
         if in_dim != out_dim:
@@ -68,10 +65,19 @@ class ResBlock(nn.Module):
             elif isinstance(m, nn.GroupNorm):
                 _ = nn.init.ones_(m.weight)
                 _ = nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.Linear):
+                _ = nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
 
     @override
-    def forward(self, x: torch.Tensor):
-        o = self.sequential(x)
+    def forward(self, x: torch.Tensor, t_emb: torch.Tensor):
+        t_emb = self.embedding_projection(t_emb)
+
+        o = self.conv1(x)
+        o = o + t_emb[:, :, None, None]
+
+        o = self.dropout(o)
+
+        o = self.conv2(o)
 
         return o + self.residual_conv(x)
 
@@ -139,47 +145,99 @@ class UpBlock(nn.Module):
 
 @final
 class UNet(nn.Module):
-    def __init__(self, in_dim: int):
+    def __init__(self, in_dim: int, t_dim: int):
         super(UNet, self).__init__()
 
-        self.block1 = nn.Sequential(
-            ResBlock(in_dim, 64),
-            ResBlock(64, 64),
-        )
-        self.block2 = nn.Sequential(
-            DownBlock(64),
-            ResBlock(128, 128),
-            SelfAttention(128),
-            ResBlock(128, 128),
-        )
-        self.block3 = nn.Sequential(
-            DownBlock(128),
-            ResBlock(256, 256),
-            ResBlock(256, 256),
-        )
-        self.block4 = nn.Sequential(
-            DownBlock(256),
-            ResBlock(512, 512),
-            ResBlock(512, 512),
+        t_emb_dim = t_dim * 4
+
+        self.time_embedding = SinusoidalPositionalEmbedding(64)
+        self.time_embedding_mlp = nn.Sequential(
+            nn.Linear(t_dim, t_emb_dim),
+            nn.SiLU(),
+            nn.Linear(t_emb_dim, t_emb_dim),
         )
 
+        self.block0 = nn.Sequential(
+            nn.GroupNorm(1, in_dim),
+            nn.SiLU(),
+            nn.Conv2d(in_dim, 64, 1, 1, 1, bias=False),
+        )
+
+        self.block1_1 = ResBlock(64, 64, 256)
+        self.block1_2 = ResBlock(64, 64, 256)
+
+        self.down1 = DownBlock(64)
+
+        self.block2_1 = ResBlock(128, 128, 256)
+        self.block2_2 = ResBlock(128, 128, 256)
+
+        self.down2 = DownBlock(128)
+
+        self.block3_1 = ResBlock(256, 256, 256)
+        self.block3_2 = ResBlock(256, 256, 256)
+
+        self.down3 = DownBlock(256)
+
+        self.block4_1 = ResBlock(512, 512, 256)
+        self.block4_2 = ResBlock(512, 512, 256)
+
         self.up1 = UpBlock(512)
-        self.block5 = nn.Sequential(
-            ResBlock(256, 256),
-            ResBlock(256, 256),
-            UpBlock(256),
+
+        self.block5_1 = ResBlock(256, 256, 256)
+        self.block5_2 = ResBlock(256, 256, 256)
+
+        self.up2 = UpBlock(256)
+
+        self.block6_1 = ResBlock(128, 128, 256)
+        self.block6_2 = ResBlock(128, 128, 256)
+
+        self.up3 = UpBlock(128)
+
+        self.block7_1 = ResBlock(64, 64, 256)
+        self.block7_2 = ResBlock(64, 64, 256)
+
+        self.conv_out = nn.Sequential(
+            nn.GroupNorm(32, 64),
+            nn.SiLU(),
+            nn.Conv2d(64, in_dim, 3, 1, 1, bias=False),
         )
-        self.block6 = nn.Sequential(
-            ResBlock(128, 128),
-            SelfAttention(128),
-            ResBlock(128, 128),
-            UpBlock(128),
-        )
-        self.block7 = nn.Sequential(
-            ResBlock(64, 64),
-            ResBlock(64, 64),
-            nn.Conv2d(64, in_dim, 1, 1, 0, bias=False),
-        )
+        # self.block1 = nn.Sequential(
+        #     ResBlock(in_dim, 64, 256),
+        #     ResBlock(64, 64, 256),
+        # )
+        # self.block2 = nn.Sequential(
+        #     DownBlock(64),
+        #     ResBlock(128, 128, 256),
+        #     SelfAttention(128),
+        #     ResBlock(128, 128, 256),
+        # )
+        # self.block3 = nn.Sequential(
+        #     DownBlock(128),
+        #     ResBlock(256, 256, 256),
+        #     ResBlock(256, 256, 256),
+        # )
+        # self.block4 = nn.Sequential(
+        #     DownBlock(256),
+        #     ResBlock(512, 512, 256),
+        #     ResBlock(512, 512, 256),
+        # )
+
+        # self.block5 = nn.Sequential(
+        #     ResBlock(256, 256, 256),
+        #     ResBlock(256, 256, 256),
+        #     UpBlock(256),
+        # )
+        # self.block6 = nn.Sequential(
+        #     ResBlock(128, 128, 256),
+        #     SelfAttention(128),
+        #     ResBlock(128, 128, 256),
+        #     UpBlock(128),
+        # )
+        # self.block7 = nn.Sequential(
+        #     ResBlock(64, 64, 256),
+        #     ResBlock(64, 64, 256),
+        #     nn.Conv2d(64, in_dim, 1, 1, 0, bias=False),
+        # )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -192,18 +250,39 @@ class UNet(nn.Module):
 
     @override
     def forward(self, x: torch.Tensor, t: int, y: torch.Tensor):
-        o1 = self.block1(x)
-        o2 = self.block2(o1)
-        o3 = self.block3(o2)
-        o4 = self.block4(o3)
+        e = self.time_embedding(t)
+        e += y
+
+        o = self.block0(x)
+
+        o1 = self.block1_1(o)
+        o1 = self.block1_2(o1)
+        o1 = self.down1(o1)
+        o2 = self.block2_1(o1)
+        o2 = self.block2_2(o2)
+        o2 = self.down2(o2)
+        o3 = self.block3_1(o2)
+        o3 = self.block3_2(o3)
+        o3 = self.down3(o3)
+        o4 = self.block4_1(o3)
+        o4 = self.block4_2(o4)
 
         o = self.up1(o4)
         o = o3 + o
-        o = self.block5(o)
+        o = self.block5_1(o)
+        o = self.block5_2(o)
+        o = self.up2(o)
         o = o2 + o
-        o = self.block6(o)
+        o = self.block6_1(o)
+        o = self.block6_2(o)
+        o = self.up3(o)
         o = o1 + o
-        o = self.block7(o)
+        o = self.block7_1(o)
+        o = self.block7_2(o)
+
+        o = self.conv_out(o)
+
+        return o
 
 
 @final
@@ -214,7 +293,12 @@ class DDPM(DiffusionBaseModel):
     """
 
     def __init__(
-        self, config: DiffusionConfig, max_t: int, beta_1: float, beta_t: float
+        self,
+        config: DiffusionConfig,
+        max_t: int,
+        beta_1: float,
+        beta_t: float,
+        cfg_unconditional_prob: float,
     ):
         assert max_t > 0
         assert 0 < beta_1 < 1
@@ -227,14 +311,29 @@ class DDPM(DiffusionBaseModel):
         self.beta_1 = beta_1
         self.beta_t = beta_t
         self.alpha_t = 1 - self.beta_t
+        self.cfg_unconditional_prob = cfg_unconditional_prob
 
-        self.betas = torch.linspace(self.beta_1, self.beta_t, self.max_t)
-        self.alphas = self.betas - 1
-        self.alphas_bar = torch.cumprod(self.alphas, 0)
-        self.sqrt_alphas_bar = torch.sqrt(self.alphas_bar)
-        self.sqrt_one_minus_alphas_bar = torch.sqrt(1 - self.alphas_bar)
+        betas = torch.linspace(self.beta_1, self.beta_t, self.max_t)
+        alphas = betas - 1
+        alphas_bar = torch.cumprod(alphas, 0)
+        sqrt_alphas_bar = torch.sqrt(alphas_bar)
+        sqrt_one_minus_alphas_bar = torch.sqrt(1 - alphas_bar)
+
+        self.register_buffer("betas", betas)
+        self.register_buffer("alphas", alphas)
+        self.register_buffer("alphas_bar", alphas_bar)
+        self.register_buffer("sqrt_alphas_bar", sqrt_alphas_bar)
+        self.register_buffer("sqrt_one_minus_alphas_bar", sqrt_one_minus_alphas_bar)
 
         self.unet = UNet(self.dataset_info.channels)
+
+    def apply_cfg_conditioning(self, y: torch.Tensor) -> torch.Tensor:
+        probs = torch.rand(y.shape[0], device=self.device)
+        mask = probs < self.cfg_unconditional_prob
+        new_y = y.clone()
+        new_y[mask] = self.dataset_info.num_classes + 1
+
+        return new_y
 
     @override
     def forward(self, x: torch.Tensor):
@@ -276,7 +375,7 @@ class DDPM(DiffusionBaseModel):
             t = torch.randint(0, self.max_t, (batch_size,), device=self.device)
             eps = torch.randn(x.shape, device=self.device)
 
-            sqrt_alphas_bar = self.sqrt_alphas_bar[t].view(batch_size, 1, 1, 1)
+            sqrt_alphas_bar = self.sqrt_alphas_bar[t].view(batch_size, 1, 1, 1)  #
             sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar[t].view(
                 batch_size, 1, 1, 1
             )
