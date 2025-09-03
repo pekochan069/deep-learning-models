@@ -120,18 +120,6 @@ class GANBaseModel(BaseModel):
         self.logger.info(f"Loading pretrained generator for {self.config.name}")
         return self.load_generator(f"{self.config.name}_pretrained")
 
-    @override
-    def to_cpu(self):
-        _ = self.discriminator.to(self.device_cpu)
-        _ = self.generator.to(self.device_cpu)
-        _ = self.to(self.device_cpu)
-
-    @override
-    def to_device(self):
-        _ = self.discriminator.to(self.device)
-        _ = self.generator.to(self.device)
-        _ = self.to(self.device)
-
     def pretrain_epoch(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],

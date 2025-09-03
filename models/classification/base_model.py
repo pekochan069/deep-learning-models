@@ -42,14 +42,6 @@ class ClassificationBaseModel(BaseModel):
         save_model(self, name)
 
     @override
-    def to_cpu(self):
-        _ = self.to(self.device_cpu)
-
-    @override
-    def to_device(self):
-        _ = self.to(self.device)
-
-    @override
     def load(self):
         """Load the model and update weights."""
         loaded_model = load_model(self, self.config.name)

@@ -101,7 +101,6 @@ class ClassificationPipeline(Pipeline):
         self.model.predict(self.dataset.test)
 
         self.logger.info(f"Training pipeline completed for {self.config.name}")
-        self.clean()
 
     @override
     def evaluate(self):
@@ -115,7 +114,6 @@ class ClassificationPipeline(Pipeline):
         self.model.predict(self.dataset.test)
 
         self.logger.info(f"Evaluation completed for {self.config.name}")
-        self.clean()
 
     @override
     def run(self):
@@ -217,7 +215,6 @@ class GANPipeline(Pipeline):
         self.model.predict(self.dataset.test)
 
         self.logger.info(f"GAN training pipeline completed for {self.config.name}")
-        self.clean()
 
     @override
     def evaluate(self):
@@ -231,7 +228,6 @@ class GANPipeline(Pipeline):
         self.model.predict(self.dataset.test)
 
         self.logger.info(f"GAN evaluation completed for {self.config.name}")
-        self.clean()
 
     @override
     def run(self):
@@ -301,7 +297,6 @@ class DiffusionPipeline(Pipeline):
         self.model.save()
 
         self.logger.info(f"Training pipeline completed for {self.config.name}")
-        self.clean()
 
     @override
     def evaluate(self, *args, **kwargs):
@@ -312,7 +307,6 @@ class DiffusionPipeline(Pipeline):
         self.model.predict(*args, **kwargs)
 
         self.logger.info(f"Evaluation completed for {self.config.name}")
-        self.clean()
 
     @override
     def run(self, *args, **kwargs):

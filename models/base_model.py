@@ -43,13 +43,11 @@ class BaseModel(ABC, nn.Module):
     def load(self):
         pass
 
-    @abstractmethod
     def to_device(self):
-        pass
+        _ = self.to(self.device)
 
-    @abstractmethod
     def to_cpu(self):
-        pass
+        _ = self.to(self.device_cpu)
 
     @abstractmethod
     def train_epoch(self, *args, **kwargs) -> TrainEpochReturnType:

@@ -44,11 +44,20 @@ class CFGVQVAEParams(ParametersBase):
     gamma: float = 0.99
 
 
+class DDPMParams(ParametersBase):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    param_type: Literal["ddpm"] = "ddpm"
+    max_t: int = 1000
+    beta_1: float = 1e-4
+    beta_t: float = 0.02
+
+
 DiffusionModelParams = Annotated[
     SimpleVAEParams
     | CVAEParams
     | ConditionalCVAEParams
     | CFGCVAEParams
-    | CFGVQVAEParams,
+    | CFGVQVAEParams
+    | DDPMParams,
     Field(discriminator="param_type"),
 ]

@@ -13,6 +13,7 @@ from core.model_params.diffusion_model_params import (
     CFGVQVAEParams,
     CVAEParams,
     ConditionalCVAEParams,
+    DDPMParams,
     SimpleVAEParams,
 )
 
@@ -517,22 +518,40 @@ def main():
     # )
     # DiffusionConfig.save_config(config)
 
+    # config = DiffusionConfig(
+    #     name="cfg_vq_vae_padded_mnist",
+    #     model="cfg_vq_vae",
+    #     model_params=CFGVQVAEParams(),
+    #     dataset="padded_mnist",
+    #     batch_size=32,
+    #     shuffle=True,
+    #     optimizer="adamw",
+    #     optimizer_params=AdamWParams(lr=3e-4),
+    #     loss_function="vq_vae_loss",
+    #     epochs=50,
+    # )
+    # DiffusionConfig.save_config(config)
+
     config = DiffusionConfig(
-        name="cfg_vq_vae_padded_mnist",
-        model="cfg_vq_vae",
-        model_params=CFGVQVAEParams(),
+        name="ddpm_padded_mnist",
+        model="ddpm",
+        model_params=DDPMParams(),
         dataset="padded_mnist",
-        batch_size=32,
+        batch_size=128,
         shuffle=True,
         optimizer="adamw",
-        optimizer_params=AdamWParams(lr=3e-4),
-        loss_function="vq_vae_loss",
+        optimizer_params=AdamWParams(),
+        loss_function="mse",
         epochs=50,
+        early_stopping=True,
+        early_stopping_monitor="val_loss",
+        early_stopping_patience=5,
+        early_stopping_min_delta=0.02,
+        early_stopping_min_delta_strategy="delta_proportional",
     )
-    DiffusionConfig.save_config(config)
 
     pipeline = DiffusionPipeline(config)
-    # pipeline.train()
+    pipeline.train()
     pipeline.evaluate(guidance_scale=2.5)
 
 

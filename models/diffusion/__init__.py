@@ -1,5 +1,6 @@
 from core.config import DiffusionConfig
 from .vae import SimpleVAE, CVAE, ConditionalCVAE, CFGCVAE, CFGVQVAE
+from .diffusion import DDPM
 
 
 def get_diffusion_model(config: DiffusionConfig):
@@ -14,6 +15,8 @@ def get_diffusion_model(config: DiffusionConfig):
             return CFGCVAE(config, **config.model_params.to_kwargs())
         case "cfg_vq_vae":
             return CFGVQVAE(config, **config.model_params.to_kwargs())
+        case "ddpm":
+            return DDPM(config, **config.model_params.to_kwargs())
 
 
 __all__ = ["get_diffusion_model"]

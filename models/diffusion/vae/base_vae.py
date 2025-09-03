@@ -42,18 +42,6 @@ class VAEBaseModel(DiffusionBaseModel, ABC):
         self.logger.info(f"Model {self.config.name} loaded successfully.")
 
     @override
-    def to_cpu(self):
-        _ = self.to(self.device_cpu)
-        _ = self.encoder.to(self.device_cpu)
-        _ = self.decoder.to(self.device_cpu)
-
-    @override
-    def to_device(self):
-        _ = self.to(self.device)
-        _ = self.encoder.to(self.device)
-        _ = self.decoder.to(self.device)
-
-    @override
     def fit(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],

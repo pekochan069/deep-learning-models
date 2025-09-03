@@ -57,6 +57,32 @@ def get_channels(dataset_name: DatasetName) -> int:
             return 3
 
 
+@final
+class DatasetInfo:
+    def __init__(self, image_size: int, num_classes: int, channels: int) -> None:
+        self.image_size = image_size
+        self.num_classes = num_classes
+        self.channels = channels
+
+
+def get_dataset_info(dataset_name: DatasetName) -> DatasetInfo:
+    match dataset_name:
+        case "mnist" | "fashion_mnist":
+            return DatasetInfo(28, 10, 1)
+        case "padded_mnist":
+            return DatasetInfo(32, 10, 1)
+        case "cifar10":
+            return DatasetInfo(32, 10, 3)
+        case "cifar100":
+            return DatasetInfo(32, 100, 3)
+        case "mini_imagenet":
+            return DatasetInfo(224, 100, 3)
+        case "imagenet":
+            return DatasetInfo(224, 1000, 3)
+        case "df2k_ost_small" | "df2k_ost":
+            return DatasetInfo(96, 0, 3)
+
+
 @dataclass
 class TrainableDataset:
     train: DataLoader[tuple[torch.Tensor, torch.Tensor]]
@@ -123,12 +149,12 @@ def get_dataset(
     """_summary_
 
     Args:
-        config (Config): _description_
-        transform (Callable[[Any], torch.Tensor] | None, optional): _description_. Defaults to None.
-        input_transform (Callable[[Any], torch.Tensor] | None, optional): Only for UpscaleDataset (df2k_ost, df2k_ost_small). Defaults to None.
+            config (Config): _description_
+            transform (Callable[[Any], torch.Tensor] | None, optional): _description_. Defaults to None.
+            input_transform (Callable[[Any], torch.Tensor] | None, optional): Only for UpscaleDataset (df2k_ost, df2k_ost_small). Defaults to None.
 
     Returns:
-        TrainableDataset: _description_
+            TrainableDataset: _description_
     """
     name = config.dataset
     batch_size = config.batch_size

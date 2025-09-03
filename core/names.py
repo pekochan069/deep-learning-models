@@ -58,6 +58,7 @@ DiffusionModelName = Literal[
     "conditional_cvae",
     "cfg_cvae",
     "cfg_vq_vae",
+    "ddpm",
 ]
 LossFunctionName = Literal[
     "l1",
