@@ -9,6 +9,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh # Linux
 winget install astral-sh.uv # Windows
 ```
 
+Change name of `pyproject-{platform}.toml` to `pyproject.toml` and `uv-{platform}.lock` to `uv.lock` (`pyproject-cuda.toml` to `pyproject.toml` and `uv-cuda.lock` to `uv.lock`)
+
 ```bash
 uv sync
 ```
