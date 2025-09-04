@@ -1,20 +1,13 @@
 import logging
 
-import torch
-import torchvision.transforms.v2 as transforms
 
-from core.config import ClassificationConfig, DiffusionConfig, GANConfig
+from core.config import DiffusionConfig
 from core.device import available_device
 from core.logger import init_logger
-from core.optimizer import AdamParams, AdamWParams
-from core.pipeline import ClassificationPipeline, DiffusionPipeline, GANPipeline
+from core.optimizer import AdamWParams
+from core.pipeline import DiffusionPipeline
 from core.model_params.diffusion_model_params import (
-    CFGCVAEParams,
-    CFGVQVAEParams,
-    CVAEParams,
-    ConditionalCVAEParams,
     DDPMParams,
-    SimpleVAEParams,
 )
 
 
@@ -549,6 +542,7 @@ def main():
         early_stopping_min_delta=0.02,
         early_stopping_min_delta_strategy="delta_proportional",
     )
+    DiffusionConfig.save_config(config)
 
     pipeline = DiffusionPipeline(config)
     pipeline.train()

@@ -6,7 +6,6 @@ from .names import LossFunctionName
 from .loss_functions import (
     GANDiscriminatorLoss,
     SRGANGeneratorLoss,
-    ESRGANGeneratorLoss,
     ESRGANDiscriminatorLoss,
     VAELoss,
     BetaVAELoss,

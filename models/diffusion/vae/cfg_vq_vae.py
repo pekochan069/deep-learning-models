@@ -601,7 +601,7 @@ class CFGVQVAE(VAEBaseModel):
 
         self.logger.info("Training PixelCNN")
 
-        now = time.time()
+        start = time.time()
 
         for epoch in range(self.config.epochs):
             self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")

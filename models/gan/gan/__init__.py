@@ -1,7 +1,6 @@
 from typing import final, override
 import torch
 import torch.nn as nn
-from torchinfo import summary
 
 from core.config import GANConfig
 
@@ -84,18 +83,18 @@ class GAN(GANBaseModel):
         self.generator = Generator(output_size=g_output_size)
         self.discriminator = Discriminator(g_output_size)
 
-    @override
-    def summary(self, input_size: tuple[int, int, int, int]):
-        g_output_size = (
-            784
-            if self.config.dataset == "mnist"
-            else 1024
-            if self.config.dataset == "cifar10" or self.config.dataset == "cifar100"
-            else 50176
-        )
+    # @override
+    # def summary(self, input_size: tuple[int, int, int, int]):
+    #     g_output_size = (
+    #         784
+    #         if self.config.dataset == "mnist"
+    #         else 1024
+    #         if self.config.dataset == "cifar10" or self.config.dataset == "cifar100"
+    #         else 50176
+    #     )
 
-        _ = summary(self.generator, input_size=(1, 100))
-        _ = summary(
-            self.discriminator,
-            input_size=(1, g_output_size),
-        )
+    #     _ = summary(self.generator, input_size=(1, 100))
+    #     _ = summary(
+    #         self.discriminator,
+    #         input_size=(1, g_output_size),
+    #     )

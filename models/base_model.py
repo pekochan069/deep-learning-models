@@ -36,11 +36,11 @@ class BaseModel(ABC, nn.Module):
         self.logger = logging.getLogger(logger_name)
 
     @abstractmethod
-    def save(self):
+    def save(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def load(self):
+    def load(self, *args, **kwargs):
         pass
 
     def to_device(self):
@@ -75,6 +75,6 @@ class BaseModel(ABC, nn.Module):
         pass
 
     @abstractmethod
-    def plot_history(self, show: bool, save: bool):
+    def plot_history(self, show: bool, save: bool, *args, **kwargs):
         """Plot the training history."""
         pass

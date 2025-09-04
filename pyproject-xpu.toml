@@ -70,3 +70,4 @@ reportAny = false
 reportExplicitAny = false
 reportUnknownArgumentType = false
 reportUnknownParameterType = false
+reportUnknownLambdaType = false

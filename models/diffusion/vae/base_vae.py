@@ -6,12 +6,11 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchinfo import summary
 
 from core.config import DiffusionConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
-from core.weights import load_model, save_model
+from core.weights import load_model_old, save_model_old
 from ..base_model import DiffusionBaseModel
 
 
@@ -26,14 +25,14 @@ class VAEBaseModel(DiffusionBaseModel, ABC):
     def save(self, name: str | None = None):
         """Save the model."""
         name = name or self.config.name
-        save_model(self.encoder, f"{name}-encoder")
-        save_model(self.decoder, f"{name}-decoder")
+        save_model_old(self.encoder, f"{name}-encoder")
+        save_model_old(self.decoder, f"{name}-decoder")
 
     @override
     def load(self):
         """Load the model and update weights."""
-        loaded_encoder = load_model(self.encoder, f"{self.config.name}-encoder")
-        loaded_decoder = load_model(self.decoder, f"{self.config.name}-decoder")
+        loaded_encoder = load_model_old(self.encoder, f"{self.config.name}-encoder")
+        loaded_decoder = load_model_old(self.decoder, f"{self.config.name}-decoder")
         if loaded_encoder is None or loaded_decoder is None:
             self.logger.info(f"Model {self.config.name} not found.")
             return

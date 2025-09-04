@@ -12,7 +12,7 @@ from ..base_model import BaseModel
 from core.config import ClassificationConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
-from core.weights import load_model, save_model
+from core.weights import load_model_old, save_model_old
 
 
 @final
@@ -39,12 +39,12 @@ class ClassificationBaseModel(BaseModel):
     def save(self, name: str | None = None):
         """Save the model."""
         name = name or self.config.name
-        save_model(self, name)
+        save_model_old(self, name)
 
     @override
     def load(self):
         """Load the model and update weights."""
-        loaded_model = load_model(self, self.config.name)
+        loaded_model = load_model_old(self, self.config.name)
         if loaded_model is None:
             self.logger.error(f"Model {self.config.name} not found.")
             return
