@@ -5,6 +5,7 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
@@ -90,6 +91,7 @@ class InceptionV1Module(nn.Module):
         return torch.cat((o1, o2, o3, o4), dim=1)
 
 
+@ModelRegistry.register("inception_v1")
 @final
 class InceptionV1(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):

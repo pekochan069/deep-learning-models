@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from core.config import GANConfig
+from core.registry import ModelRegistry
 
 from ..base_model import GANBaseModel
 
@@ -67,6 +68,7 @@ class Generator(nn.Module):
         return o
 
 
+@ModelRegistry.register("gan")
 @final
 class GAN(GANBaseModel):
     def __init__(self, config: GANConfig):

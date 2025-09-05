@@ -53,7 +53,7 @@ class SinusoidalPositionalEmbedding(nn.Module):
             # numel - 요소 개수
             if index.numel() > 0 and index.max() < self.pe.size(0) and index.min() >= 0:
                 embedding = self.pe.index_select(0, index)
-                return embedding.view(*t.size, self.d)  # pyright: ignore[reportGeneralTypeIssues]
+                return embedding.view(*t.shape, self.d)
 
         t = t.to(dtype=torch.float32)
         orig_shape = t.shape

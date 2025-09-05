@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from core.registry import ModelRegistry
+
 from ..base_model import GANBaseModel
 from core.config import GANConfig
 
@@ -175,6 +177,7 @@ class Generator(nn.Module):
         return o
 
 
+@ModelRegistry.register("srgan")
 @final
 class SRGAN(GANBaseModel):
     def __init__(self, config: GANConfig):

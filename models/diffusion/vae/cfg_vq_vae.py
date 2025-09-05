@@ -15,6 +15,7 @@ from core.config import DiffusionConfig
 from core.dataset import get_channels, get_image_size, get_num_classes
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
+from core.registry import ModelRegistry
 from .base_vae import VAEBaseModel
 
 
@@ -309,6 +310,7 @@ class Decoder(nn.Module):
         return o
 
 
+@ModelRegistry.register("cfg_vq_vae")
 @final
 class CFGVQVAE(VAEBaseModel):
     def __init__(

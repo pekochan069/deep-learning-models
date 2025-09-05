@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 alpha = 1.2
@@ -268,6 +269,7 @@ class EfficientNetV1(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("efficient_net_v1_b0")
 @final
 class EfficientNetV1B0(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -276,6 +278,7 @@ class EfficientNetV1B0(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b1")
 @final
 class EfficientNetV1B1(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -284,6 +287,7 @@ class EfficientNetV1B1(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b2")
 @final
 class EfficientNetV1B2(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -292,6 +296,7 @@ class EfficientNetV1B2(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b3")
 @final
 class EfficientNetV1B3(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -300,6 +305,7 @@ class EfficientNetV1B3(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b4")
 @final
 class EfficientNetV1B4(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -308,6 +314,7 @@ class EfficientNetV1B4(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b5")
 @final
 class EfficientNetV1B5(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -316,6 +323,7 @@ class EfficientNetV1B5(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b6")
 @final
 class EfficientNetV1B6(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -324,6 +332,7 @@ class EfficientNetV1B6(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_b7")
 @final
 class EfficientNetV1B7(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
@@ -332,7 +341,7 @@ class EfficientNetV1B7(EfficientNetV1):
         )
 
 
-@final
+@ModelRegistry.register("efficient_net_v1_b8")
 class EfficientNetV1B8(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):
         super(EfficientNetV1B8, self).__init__(
@@ -340,6 +349,7 @@ class EfficientNetV1B8(EfficientNetV1):
         )
 
 
+@ModelRegistry.register("efficient_net_v1_l2")
 @final
 class EfficientNetV1L2(EfficientNetV1):
     def __init__(self, config: ClassificationConfig):

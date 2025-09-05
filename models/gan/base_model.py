@@ -386,18 +386,19 @@ class GANBaseModel(BaseModel):
                         self.config.early_stopping_min_delta_strategy
                         == "delta_proportional"
                     ):
-                        if (
-                            self.history.val_g_loss[-1]
-                            < self.history.val_g_loss[-2]
-                            + (
-                                self.history.val_g_loss[-3]
-                                - self.history.val_g_loss[-2]
-                            )
-                            * self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
+                        if len(self.history.val_g_loss) >= 3:
+                            if (
+                                self.history.val_g_loss[-1]
+                                < self.history.val_g_loss[-2]
+                                + abs(
+                                    self.history.val_g_loss[-3]
+                                    - self.history.val_g_loss[-2]
+                                )
+                                * self.config.early_stopping_min_delta
+                            ):
+                                early_stop_counter = 0
+                            else:
+                                early_stop_counter += 1
                 else:
                     if len(self.history.train_g_loss) < 2:
                         continue
@@ -428,18 +429,19 @@ class GANBaseModel(BaseModel):
                         self.config.early_stopping_min_delta_strategy
                         == "delta_proportional"
                     ):
-                        if (
-                            self.history.train_g_loss[-1]
-                            < self.history.train_g_loss[-2]
-                            + (
-                                self.history.train_g_loss[-3]
-                                - self.history.train_g_loss[-2]
-                            )
-                            * self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
+                        if len(self.history.train_g_loss) >= 3:
+                            if (
+                                self.history.train_g_loss[-1]
+                                < self.history.train_g_loss[-2]
+                                + abs(
+                                    self.history.train_g_loss[-3]
+                                    - self.history.train_g_loss[-2]
+                                )
+                                * self.config.early_stopping_min_delta
+                            ):
+                                early_stop_counter = 0
+                            else:
+                                early_stop_counter += 1
 
             if (
                 self.config.early_stopping

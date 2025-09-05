@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from core.config import DiffusionConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from .base_vae import VAEBaseModel
 
 
@@ -140,6 +141,7 @@ class Decoder(nn.Module):
         return o
 
 
+@ModelRegistry.register("cfg_cvae")
 @final
 class CFGCVAE(VAEBaseModel):
     def __init__(

@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_channels, get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
@@ -163,6 +164,7 @@ class ResNet(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("res_net_18")
 @final
 class ResNet18(ResNet):
     def __init__(self, config: ClassificationConfig):
@@ -181,6 +183,7 @@ class ResNet18(ResNet):
         )
 
 
+@ModelRegistry.register("res_net_34")
 @final
 class ResNet34(ResNet):
     def __init__(self, config: ClassificationConfig):
@@ -207,6 +210,7 @@ class ResNet34(ResNet):
         )
 
 
+@ModelRegistry.register("res_net_50")
 @final
 class ResNet50(ResNet):
     def __init__(self, config: ClassificationConfig):
@@ -255,6 +259,7 @@ class ResNet50(ResNet):
         super(ResNet50, self).__init__(config, blocks, is_large_model=True)
 
 
+@ModelRegistry.register("res_net_101")
 @final
 class ResNet101(ResNet):
     def __init__(self, config: ClassificationConfig):
@@ -320,6 +325,7 @@ class ResNet101(ResNet):
         super(ResNet101, self).__init__(config, blocks, is_large_model=True)
 
 
+@ModelRegistry.register("res_net_152")
 @final
 class ResNet152(ResNet):
     def __init__(self, config: ClassificationConfig):

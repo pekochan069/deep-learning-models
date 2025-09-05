@@ -530,7 +530,7 @@ def main():
         model="ddpm",
         model_params=DDPMParams(),
         dataset="padded_mnist",
-        batch_size=128,
+        batch_size=64,
         shuffle=True,
         optimizer="adamw",
         optimizer_params=AdamWParams(),
@@ -546,7 +546,7 @@ def main():
 
     pipeline = DiffusionPipeline(config)
     pipeline.train()
-    pipeline.evaluate(guidance_scale=2.5)
+    # pipeline.evaluate(guidance_scale=2.5)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from torchinfo import summary
 from tqdm import tqdm
 
 from core.config import DiffusionConfig
+from core.registry import ModelRegistry
 from .base_vae import VAEBaseModel
 
 
@@ -77,6 +78,7 @@ class SimpleVAEDecoder(nn.Module):
         return o
 
 
+@ModelRegistry.register("simple_vae")
 @final
 class SimpleVAE(VAEBaseModel):
     def __init__(self, config: DiffusionConfig, hidden_dim: int, latent_dim: int):

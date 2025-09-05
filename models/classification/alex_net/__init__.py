@@ -4,9 +4,11 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
+@ModelRegistry.register("alex_net")
 @final
 class AlexNet(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):

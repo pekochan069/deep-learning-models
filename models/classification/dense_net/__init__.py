@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
@@ -164,6 +165,7 @@ class DenseNet(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("dense_net_cifar")
 @final
 class DenseNetCifar(DenseNet):
     def __init__(self, config: ClassificationConfig):
@@ -202,6 +204,7 @@ class DenseNetCifar(DenseNet):
         )
 
 
+@ModelRegistry.register("dense_net_121")
 @final
 class DenseNet121(DenseNet):
     def __init__(self, config: ClassificationConfig):
@@ -254,6 +257,7 @@ class DenseNet121(DenseNet):
         )
 
 
+@ModelRegistry.register("dense_net_169")
 @final
 class DenseNet169(DenseNet):
     def __init__(self, config: ClassificationConfig):
@@ -306,6 +310,7 @@ class DenseNet169(DenseNet):
         )
 
 
+@ModelRegistry.register("dense_net_201")
 @final
 class DenseNet201(DenseNet):
     def __init__(self, config: ClassificationConfig):
@@ -358,6 +363,7 @@ class DenseNet201(DenseNet):
         )
 
 
+@ModelRegistry.register("dense_net_264")
 @final
 class DenseNet264(DenseNet):
     def __init__(self, config: ClassificationConfig):

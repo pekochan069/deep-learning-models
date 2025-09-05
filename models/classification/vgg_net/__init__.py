@@ -4,9 +4,11 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
+@ModelRegistry.register("vgg_net_11")
 @final
 class VGGNet11(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):
@@ -68,6 +70,7 @@ class VGGNet11(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("vgg_net_13")
 @final
 class VGGNet13(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):
@@ -132,6 +135,7 @@ class VGGNet13(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("vgg_net_16")
 @final
 class VGGNet16(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):
@@ -202,6 +206,7 @@ class VGGNet16(ClassificationBaseModel):
         return o
 
 
+@ModelRegistry.register("vgg_net_19")
 @final
 class VGGNet19(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):

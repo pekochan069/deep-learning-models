@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from core.config import ClassificationConfig
 from core.dataset import get_num_classes
+from core.registry import ModelRegistry
 
 from ..base_model import ClassificationBaseModel
 
@@ -42,6 +43,7 @@ class DepthwiseConv2d(nn.Module):
         return o
 
 
+@ModelRegistry.register("shuffle_net_v1")
 @final
 class ShuffleNetV1(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):

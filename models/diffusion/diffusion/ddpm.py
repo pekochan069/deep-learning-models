@@ -1,5 +1,6 @@
 # pyright: reportIndexIssue=false
 
+import time
 from typing import Literal, final, override
 
 import matplotlib.pyplot as plt
@@ -14,8 +15,11 @@ from tqdm import tqdm
 
 from core.config import DiffusionConfig
 from core.dataset import get_dataset_info
+from core.loss import get_loss_function
 from core.modules.positional_embedding import SinusoidalPositionalEmbedding
 from core.modules.attention import MultiHeadScaledDotAttention
+from core.optimizer import get_optimizer
+from core.registry import ModelRegistry
 from core.weights import load_model, save_model
 from ..base_model import DiffusionBaseModel
 
@@ -355,15 +359,15 @@ class UNet(nn.Module):
 
         o1 = self.block1_1(o0, t_emb)
         o1 = self.block1_2(o1, t_emb)
-        o1 = self.down1(o1)
-        o2 = self.block2_1(o1, t_emb)
+        o2 = self.down1(o1)
+        o2 = self.block2_1(o2, t_emb)
         o2 = self.block2_attention(o2)
         o2 = self.block2_2(o2, t_emb)
-        o2 = self.down2(o2)
-        o3 = self.block3_1(o2, t_emb)
+        o3 = self.down2(o2)
+        o3 = self.block3_1(o3, t_emb)
         o3 = self.block3_2(o3, t_emb)
-        o3 = self.down3(o3)
-        o4 = self.block4_1(o3, t_emb)
+        o4 = self.down3(o3)
+        o4 = self.block4_1(o4, t_emb)
         o4 = self.block4_2(o4, t_emb)
 
         o = self.up1(o4, o3)
@@ -382,6 +386,7 @@ class UNet(nn.Module):
         return o
 
 
+@ModelRegistry.register("ddpm")
 @final
 class DDPM(DiffusionBaseModel):
     """DDPM
@@ -512,8 +517,12 @@ class DDPM(DiffusionBaseModel):
             t = torch.randint(0, self.max_t, (batch_size,), device=self.device)
             eps = torch.randn(x.shape, device=self.device)
 
-            sqrt_alphas_bar = self.sqrt_alphas_bar[t].view(batch_size, 1, 1, 1)  #
-            sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar[t].view(
+            sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
+                batch_size, 1, 1, 1
+            )
+            sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                0, t
+            ).view(  # pyright: ignore[reportCallIssue]
                 batch_size, 1, 1, 1
             )
 
@@ -552,9 +561,13 @@ class DDPM(DiffusionBaseModel):
                 t = torch.randint(0, self.max_t, (batch_size,), device=self.device)
                 eps = torch.randn(x.shape, device=self.device)
 
-                sqrt_alphas_bar = self.sqrt_alphas_bar[t].view(batch_size, 1, 1, 1)
-                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar[t].view(
-                    batch_size, 1, 1, 1
+                sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
+                    -1, 1, 1, 1
+                )
+                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                    0, t
+                ).view(  # pyright: ignore[reportCallIssue]
+                    -1, 1, 1, 1
                 )
 
                 x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
@@ -568,8 +581,159 @@ class DDPM(DiffusionBaseModel):
         return epoch_loss
 
     @override
-    def fit(self, *args, **kwargs) -> None:
-        return super().fit(*args, **kwargs)
+    def fit(
+        self,
+        train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]] | None = None,
+    ) -> None:
+        self.logger.info(
+            f"Training {self.config.model} on {self.config.dataset} dataset"
+        )
+
+        start = time.time()
+
+        optimizer = get_optimizer(self.config.optimizer)(
+            self.parameters(), **self.config.optimizer_params.to_kwargs()
+        )
+        loss_function = get_loss_function(self.config.loss_function).to(self.device)
+
+        early_stop_counter = 0
+        warning_printed = False
+
+        for epoch in range(self.config.epochs):
+            self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")
+
+            epoch_loss = self.train_epoch(train_loader, optimizer, loss_function)
+
+            self.history.train_loss.append(epoch_loss)
+
+            if val_loader:
+                epoch_val_loss = self.validate_epoch(val_loader, loss_function)
+                self.history.val_loss.append(epoch_val_loss)
+                self.logger.info(
+                    f"Epoch {epoch + 1}/{self.config.epochs} finished, Train Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}"
+                )
+            else:
+                self.logger.info(
+                    f"Epoch {epoch + 1}/{self.config.epochs} finished, Loss: {epoch_loss:.4f}"
+                )
+
+            if (
+                self.config.save_after_n_epoch
+                and (epoch + 1) % self.config.save_after_n_epoch_period == 0
+            ):
+                self.save(f"{self.config.name}_epoch_{epoch + 1}")
+                self.logger.info(f"Model saved at epoch {epoch + 1}")
+
+            if self.config.early_stopping:
+                if self.config.early_stopping_monitor == "val_loss":
+                    if not val_loader and not warning_printed:
+                        warning_printed = True
+                        self.logger.warning(
+                            "Early stopping is enabled but validation data loader is not provided."
+                        )
+                        continue
+
+                    if len(self.history.val_loss) < 2:
+                        continue
+
+                    if self.config.early_stopping_min_delta_strategy == "fixed":
+                        if (
+                            self.history.val_loss[-1]
+                            < self.history.val_loss[-2]
+                            + self.config.early_stopping_min_delta
+                        ):
+                            early_stop_counter = 0
+                        else:
+                            early_stop_counter += 1
+                    elif (
+                        self.config.early_stopping_min_delta_strategy
+                        == "previous_proportional"
+                    ):
+                        if (
+                            self.history.val_loss[-1]
+                            < self.history.val_loss[-2]
+                            + self.history.val_loss[-2]
+                            * self.config.early_stopping_min_delta
+                        ):
+                            early_stop_counter = 0
+                        else:
+                            early_stop_counter += 1
+                    elif (
+                        self.config.early_stopping_min_delta_strategy
+                        == "delta_proportional"
+                    ):
+                        if len(self.history.val_loss) >= 3:
+                            if (
+                                self.history.val_loss[-1]
+                                < self.history.val_loss[-2]
+                                + abs(
+                                    self.history.val_loss[-3]
+                                    - self.history.val_loss[-2]
+                                )
+                                * self.config.early_stopping_min_delta
+                            ):
+                                early_stop_counter = 0
+                            else:
+                                early_stop_counter += 1
+                else:
+                    if len(self.history.train_loss) < 2:
+                        continue
+
+                    if self.config.early_stopping_min_delta_strategy == "fixed":
+                        if (
+                            self.history.train_loss[-1]
+                            < self.history.train_loss[-2]
+                            + self.config.early_stopping_min_delta
+                        ):
+                            early_stop_counter = 0
+                        else:
+                            early_stop_counter += 1
+                    elif (
+                        self.config.early_stopping_min_delta_strategy
+                        == "previous_proportional"
+                    ):
+                        if (
+                            self.history.train_loss[-1]
+                            < self.history.train_loss[-2]
+                            + self.history.train_loss[-2]
+                            * self.config.early_stopping_min_delta
+                        ):
+                            early_stop_counter = 0
+                        else:
+                            early_stop_counter += 1
+                    elif (
+                        self.config.early_stopping_min_delta_strategy
+                        == "delta_proportional"
+                    ):
+                        if len(self.history.train_loss) >= 3:
+                            if (
+                                self.history.train_loss[-1]
+                                < self.history.train_loss[-2]
+                                + abs(
+                                    self.history.train_loss[-3]
+                                    - self.history.train_loss[-2]
+                                )
+                                * self.config.early_stopping_min_delta
+                            ):
+                                early_stop_counter = 0
+                            else:
+                                early_stop_counter += 1
+
+            if (
+                self.config.early_stopping
+                and early_stop_counter >= self.config.early_stopping_patience
+            ):
+                self.logger.info(f"Early stopping triggered after {epoch} epochs.")
+                break
+
+        _ = self.train(False)
+
+        end = time.time()
+
+        self.logger.info(f"Training complete. Time taken: {end - start:.2f} seconds")
+
+        self.save(epoch=self.config.epochs, best_metric=np.min(self.history.train_loss))
 
     @override
     def predict(
@@ -591,9 +755,17 @@ class DDPM(DiffusionBaseModel):
                 ),
                 device=self.device,
             )
-            t_space = torch.linspace(
-                self.max_t - 1, 0, steps, dtype=torch.long, device=self.device
-            )
+
+            if steps == self.max_t:
+                t_space = torch.arange(
+                    self.max_t - 1, -1, -1, device=self.device, dtype=torch.long
+                )
+            else:
+                stride = np.ceil(self.max_t / steps)
+                t_space = torch.arange(
+                    self.max_t - 1, -1, -stride, device=self.device, dtype=torch.long
+                )[:steps]
+
             y = torch.randint(
                 0,
                 self.dataset_info.num_classes,
@@ -603,7 +775,8 @@ class DDPM(DiffusionBaseModel):
             )
             y_uncond = torch.full_like(y, self.null_token)
 
-            for i in tqdm(range(0, steps), desc="Generating"):
+            for i, t_i in tqdm(enumerate(t_space), desc="Generating"):
+                t = t_i.expand(batch_size)
                 if i != steps - 1:
                     z = torch.randn(
                         (
@@ -625,13 +798,15 @@ class DDPM(DiffusionBaseModel):
                         device=self.device,
                     )
 
-                sqrt_alphas_bar = self.sqrt_alphas_bar[i].view(batch_size, 1, 1, 1)
-                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar[i].view(
-                    batch_size, 1, 1, 1
+                betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
+                sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
+                    -1, 1, 1, 1
                 )
-                betas = self.betas[i].view(batch_size, 1, 1, 1)
-
-                t = t_space[i]
+                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                    0, t
+                ).view(  # pyright: ignore[reportCallIssue]
+                    -1, 1, 1, 1
+                )
 
                 o = self.unet(x_t, t, y)
                 o_uncond = self.unet(x_t, t, y_uncond)

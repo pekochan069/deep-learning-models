@@ -3,9 +3,11 @@ import torch
 import torch.nn as nn
 
 from core.config import ClassificationConfig
+from core.registry import ModelRegistry
 from ..base_model import ClassificationBaseModel
 
 
+@ModelRegistry.register("le_net")
 @final
 class LeNet(ClassificationBaseModel):
     def __init__(self, config: ClassificationConfig):

@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from core.config import GANConfig
+from core.registry import ModelRegistry
 from ..base_model import GANBaseModel
 
 
@@ -254,6 +255,7 @@ class Generator(nn.Module):
         return o
 
 
+@ModelRegistry.register("esrgan_plus")
 @final
 class ESRGANPlus(GANBaseModel):
     def __init__(self, config: GANConfig):
