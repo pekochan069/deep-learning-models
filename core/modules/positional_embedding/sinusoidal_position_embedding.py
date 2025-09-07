@@ -19,6 +19,7 @@ class SinusoidalPositionalEmbedding(nn.Module):
         assert d % 2 == 0
 
         self.d = d
+        self.base = base
 
         pe = torch.zeros(max_len, d)
         p = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)

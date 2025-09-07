@@ -1,7 +1,7 @@
 # pyright: reportIndexIssue=false
 
 import time
-from typing import Literal, final, override
+from typing import Any, Literal, final, override
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torchinfo import summary
 import torchvision
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -473,7 +474,7 @@ class DDPM(DiffusionBaseModel):
         save_model(
             self.unet,
             self.config.name,
-            f"unet-{label}",
+            label,
             epoch=epoch,
             best_metric=best_metric,
             # ema_state_dict=ema_sd,
@@ -727,6 +728,16 @@ class DDPM(DiffusionBaseModel):
                 self.logger.info(f"Early stopping triggered after {epoch} epochs.")
                 break
 
+            # self.predict(16, 20, 2.0, False, True, f"train_epoch_{epoch + 1}")
+            self.predict(
+                batch_size=16,
+                steps=self.max_t,
+                guidance_scale=2.5,
+                show=False,
+                save_file_postfix=f"train_epoch_{epoch + 1}",
+                seed=0,
+            )
+
         _ = self.train(False)
 
         end = time.time()
@@ -737,12 +748,24 @@ class DDPM(DiffusionBaseModel):
 
     @override
     def predict(
-        self, batch_size: int = 64, steps: int = 20, guidance_scale: float = 2.0
+        self,
+        *,
+        batch_size: int = 64,
+        steps: int = 1000,
+        guidance_scale: float = 2.0,
+        show: bool = True,
+        save: bool = True,
+        save_file_postfix: str = "",
+        seed: int | None = None,
     ):
         _ = self.eval()
+        if seed is not None:
+            _ = torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed(seed)
 
-        if steps >= self.max_t:
-            self.logger.error(f"Steps must be smaller than max_t({self.max_t})")
+        if steps > self.max_t:
+            self.logger.error(f"Steps must be less than or equal max_t({self.max_t})")
             return
 
         with torch.no_grad():
@@ -799,8 +822,8 @@ class DDPM(DiffusionBaseModel):
                     )
 
                 betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
-                sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
-                    -1, 1, 1, 1
+                sqrt_alphas = (
+                    self.alphas.sqrt().index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
                 )
                 sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
                     0, t
@@ -812,22 +835,82 @@ class DDPM(DiffusionBaseModel):
                 o_uncond = self.unet(x_t, t, y_uncond)
                 o = o_uncond + guidance_scale * (o - o_uncond)
 
-                x_t = (1 / sqrt_alphas_bar) * (
+                # TODO Use posterior variance `√\tilde{β}_t` instead
+                x_t = (1 / sqrt_alphas) * (
                     x_t - (betas / (sqrt_one_minus_alphas_bar)) * o
-                ) + z * betas
+                ) + z * betas.sqrt()
 
-        o = x_t.clamp(0, 1)
-        o = o.cpu()
+        o = x_t.clamp(0, 1).permute(0, 2, 3, 1).cpu()
+        y = y.cpu().tolist()
 
-        grid_img = torchvision.utils.make_grid(o, nrow=8, padding=8, normalize=True)
-        _ = plt.imshow(grid_img.permute(1, 2, 0))
-        _ = plt.axis("off")
-        _ = plt.show()
+        def subplot_with_titles(images: torch.Tensor, labels: list[Any], nrow: int = 8):
+            labels = [str(label) for label in labels]
+
+            N, _, _, _ = images.shape
+            rows = int(np.ceil(N / nrow))
+
+            _, axes = plt.subplots(rows, nrow, figsize=(nrow * 2, rows * 2))
+            axes = axes.reshape(-1) if rows * nrow > 1 else [axes]
+
+            for i in range(rows * nrow):
+                ax = axes[i]
+                ax.axis("off")
+                if i < N:
+                    img = images[i]
+                    ax.imshow(img, cmap="gray")
+                    ax.set_title(
+                        labels[i], fontsize=10, pad=2
+                    )  # pad로 제목과 이미지 간 간격 조절
+
+            plt.tight_layout()
+
+            if save:
+                file_name = self.config.name
+                if save_file_postfix != "":
+                    file_name += f"_{save_file_postfix}"
+                plt.savefig(f"images/{file_name}_predict.png")
+
+            if show:
+                _ = plt.show()
+
+            plt.close()
+
+        subplot_with_titles(o, y, 8)
 
     @override
-    def summary(self, *args, **kwargs):
-        return super().summary(*args, **kwargs)
+    def summary(self, input_size: tuple[int, int, int, int]):
+        _ = summary(
+            self.unet,
+            [input_size, (input_size[0],), (input_size[0],)],
+            dtypes=[torch.float, torch.long, torch.long],
+        )
+        # print(self)
 
     @override
     def plot_history(self, show: bool, save: bool):
-        return super().plot_history(show, save)
+        _ = plt.plot(
+            range(1, len(self.history.train_loss) + 1),
+            self.history.train_loss,
+            marker="o",
+            label="Train Loss",
+        )
+        if len(self.history.val_loss) > 0:
+            _ = plt.plot(
+                range(1, len(self.history.val_loss) + 1),
+                self.history.val_loss,
+                marker="o",
+                label="Validation Loss",
+            )
+        _ = plt.title("Training Loss")
+        _ = plt.xlabel("Epoch")
+        _ = plt.ylabel("Loss")
+        plt.grid()
+        _ = plt.legend()
+
+        if save:
+            plt.savefig(f"images/{self.config.name}_training_loss.png")
+
+        if show:
+            plt.show()
+
+        plt.close()

@@ -7,6 +7,7 @@ import torch
 
 from core.config import ClassificationConfig, DiffusionConfig, GANConfig
 from core.dataset import TrainableDataset, get_dataset
+from core.registry import ModelRegistry
 from models.classification import get_classification_model
 from models.classification.base_model import ClassificationBaseModel
 from models.diffusion import get_diffusion_model
@@ -259,6 +260,14 @@ class DiffusionPipeline(Pipeline):
         self.model = get_diffusion_model(self.config)
         self.dataset = get_dataset(self.config)
 
+        if load:
+            self.model.load()
+
+        self.model.to_device()
+
+    @override
+    def train(self):
+        """Execute the complete training pipeline."""
         # Display model summary
         if self.config.dataset in ["mnist", "fashion_mnist"]:
             input_size = (1, 1, 28, 28)
@@ -269,15 +278,6 @@ class DiffusionPipeline(Pipeline):
         else:  # imagenet, mini_imagenet
             input_size = (1, 3, 224, 224)
         self.model.summary(input_size)
-
-        if load:
-            self.model.load()
-
-        self.model.to_device()
-
-    @override
-    def train(self):
-        """Execute the complete training pipeline."""
 
         self.logger.info(f"Starting training pipeline for {self.config.name}")
         self.logger.info(f"Dataset: {self.config.dataset}")

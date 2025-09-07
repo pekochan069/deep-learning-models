@@ -526,17 +526,19 @@ def main():
     # DiffusionConfig.save_config(config)
 
     config = DiffusionConfig(
-        name="ddpm_padded_mnist",
+        name="ddpm_mnist",
         model="ddpm",
         model_params=DDPMParams(),
-        dataset="padded_mnist",
-        batch_size=64,
+        dataset="mnist",
+        batch_size=128,
         shuffle=True,
         optimizer="adamw",
-        optimizer_params=AdamWParams(),
+        optimizer_params=AdamWParams(
+            lr=1e-4,
+        ),
         loss_function="mse",
         epochs=50,
-        early_stopping=True,
+        early_stopping=False,
         early_stopping_monitor="val_loss",
         early_stopping_patience=5,
         early_stopping_min_delta=0.02,
@@ -545,8 +547,16 @@ def main():
     DiffusionConfig.save_config(config)
 
     pipeline = DiffusionPipeline(config)
-    pipeline.train()
-    # pipeline.evaluate(guidance_scale=2.5)
+    # pipeline.train()
+    # pipeline.evaluate(steps=1000, guidance_scale=2.5)
+    for i in range(1, 11):
+        pipeline.evaluate(
+            steps=i * 100,
+            guidance_scale=2.5,
+            show=False,
+            save_file_postfix=f"{i * 100}",
+            seed=0,
+        )
 
 
 if __name__ == "__main__":
