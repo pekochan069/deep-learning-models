@@ -21,6 +21,7 @@ logger = logging.getLogger("Config")
 class Config(PydanticBaseModel):
     name: str
     dataset: DatasetName
+    validation: bool = True
     batch_size: int
     shuffle: bool = False
     epochs: int

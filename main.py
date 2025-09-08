@@ -1,5 +1,6 @@
 import logging
 
+import matplotlib.pyplot as plt
 
 from core.config import DiffusionConfig
 from core.device import available_device
@@ -530,6 +531,7 @@ def main():
         model="ddpm",
         model_params=DDPMParams(),
         dataset="mnist",
+        validation=False,
         batch_size=128,
         shuffle=True,
         optimizer="adamw",
@@ -537,7 +539,9 @@ def main():
             lr=1e-4,
         ),
         loss_function="mse",
-        epochs=50,
+        epochs=100,
+        save_after_n_epoch=True,
+        save_after_n_epoch_period=10,
         early_stopping=False,
         early_stopping_monitor="val_loss",
         early_stopping_patience=5,
@@ -547,16 +551,74 @@ def main():
     DiffusionConfig.save_config(config)
 
     pipeline = DiffusionPipeline(config)
+    # pipeline.load("last")
     # pipeline.train()
     # pipeline.evaluate(steps=1000, guidance_scale=2.5)
-    for i in range(1, 11):
+
+    # pipeline.evaluate(
+    #     steps=1000, guidance_scale=1.0, file_postfix="8_cfg_1.0_seed_2025", seed=2025
+    # )
+    # pipeline.evaluate(
+    #     steps=1000, guidance_scale=1.5, file_postfix="8_cfg_1.5_seed_2025", seed=2025
+    # )
+    # pipeline.evaluate(
+    #     steps=1000, guidance_scale=2.0, file_postfix="8_cfg_2.0_seed_2025", seed=2025
+    # )
+    # pipeline.evaluate(
+    #     steps=1000, guidance_scale=2.5, file_postfix="8_cfg_2.5_seed_2025", seed=2025
+    # )
+    # pipeline.evaluate(
+    #     steps=1000, guidance_scale=3.0, file_postfix="8_cfg_3.0_seed_2025", seed=2025
+    # )
+
+    # for i in range(1, 11):
+    #     pipeline.evaluate(
+    #         steps=i * 100,
+    #         guidance_scale=2.5,
+    #         show=False,
+    #         save_file_postfix=f"{i * 100}",
+    #         seed=0,
+    #     )
+
+    # images = []
+    # for i in range(1, 11):
+    #     images.append(
+    #         pipeline.model(
+    #             steps=i * 100,
+    #             guidance_scale=2.5,
+    #             prompt=2,
+    #             # file_name="3",
+    #             # save=True,
+    #             seed=0,
+    #         )
+    #     )
+    # _, axes = plt.subplots(10, 1, figsize=(2, 20))
+    # axes = axes.reshape(-1)
+    # ax = axes[0]
+    # ax.axis("off")
+    # for i in range(10):
+    #     img = images[i]
+    #     print(img)
+    #     ax.imshow(img, cmap="gray")
+    #     ax.set_title((i + 1) * 100, fontsize=10, pad=2)
+    # plt.tight_layout()
+    # plt.savefig("ddpm_mnist_3")
+    # _ = plt.show()
+    # plt.close()
+
+    for i in range(5, 96, 5):
+        pipeline.load(f"epoch-{i}")
+
         pipeline.evaluate(
-            steps=i * 100,
+            steps=1000,
             guidance_scale=2.5,
             show=False,
-            save_file_postfix=f"{i * 100}",
-            seed=0,
+            file_postfix=f"epoch-{i}-seed-12",
+            seed=12,
+            batch_size=16,
         )
+
+        pipeline.clean()
 
 
 if __name__ == "__main__":

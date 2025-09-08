@@ -38,7 +38,6 @@ class SinusoidalPositionalEmbedding(nn.Module):
     # made by chatgpt
     @override
     def forward(self, t: torch.Tensor):
-        # return self.pe[:seq_len, :]
         if t.dtype in (
             torch.int8,
             torch.int16,

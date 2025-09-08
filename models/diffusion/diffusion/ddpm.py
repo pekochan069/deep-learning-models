@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchinfo import summary
-import torchvision
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -21,6 +20,8 @@ from core.modules.positional_embedding import SinusoidalPositionalEmbedding
 from core.modules.attention import MultiHeadScaledDotAttention
 from core.optimizer import get_optimizer
 from core.registry import ModelRegistry
+from core.seed import set_seed
+from core.train_utils import early_stop
 from core.weights import load_model, save_model
 from ..base_model import DiffusionBaseModel
 
@@ -459,8 +460,123 @@ class DDPM(DiffusionBaseModel):
         return new_y
 
     @override
-    def forward(self, x: torch.Tensor):
-        return x
+    def to_device(self):
+        _ = self.to(self.device)
+        _ = self.unet.to(self.device)
+        _ = self.unet.time_embedding.to(self.device)
+
+    @override
+    def to_cpu(self):
+        _ = self.to(self.device_cpu)
+        _ = self.unet.to(self.device_cpu)
+        _ = self.unet.time_embedding.to(self.device_cpu)
+
+    @override
+    def forward(
+        self,
+        batch_size: int,
+        steps: int,
+        guidance_scale: float,
+        prompt: int | None = None,
+        seed: int | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor] | None:
+        _ = self.eval()
+        set_seed(seed)
+
+        if steps > self.max_t:
+            self.logger.error(f"Steps must be less than or equal max_t({self.max_t})")
+            return
+
+        with torch.no_grad():
+            x_t = torch.randn(
+                (
+                    batch_size,
+                    self.dataset_info.channels,
+                    self.dataset_info.image_size,
+                    self.dataset_info.image_size,
+                ),
+                device=self.device,
+            )
+
+            if steps == self.max_t:
+                t_space = torch.arange(
+                    self.max_t - 1, -1, -1, device=self.device, dtype=torch.long
+                )
+            else:
+                # stride = np.ceil(self.max_t / steps)
+                # t_space = torch.arange(
+                #     self.max_t - 1, -1, -stride, device=self.device, dtype=torch.long
+                # )[:steps]
+                indices = (
+                    torch.linspace(0, self.max_t - 1, steps, device=self.device)
+                    .round()
+                    .long()
+                )
+                t_space = torch.flip(indices, dims=[0])
+
+            if prompt is None:
+                y = torch.randint(
+                    0,
+                    self.dataset_info.num_classes,
+                    (batch_size,),
+                    dtype=torch.long,
+                    device=self.device,
+                )
+            else:
+                y = torch.full(
+                    (batch_size,),
+                    prompt,
+                    dtype=torch.long,
+                    device=self.device,
+                )
+            y_uncond = torch.full_like(y, self.null_token)
+
+            for i, t_i in tqdm(enumerate(t_space), desc="Generating"):
+                t = t_i.expand(batch_size)
+                if i != steps - 1:
+                    z = torch.randn(
+                        (
+                            batch_size,
+                            self.dataset_info.channels,
+                            self.dataset_info.image_size,
+                            self.dataset_info.image_size,
+                        ),
+                        device=self.device,
+                    )
+                else:
+                    z = torch.zeros(
+                        (
+                            batch_size,
+                            self.dataset_info.channels,
+                            self.dataset_info.image_size,
+                            self.dataset_info.image_size,
+                        ),
+                        device=self.device,
+                    )
+
+                betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
+                sqrt_alphas = (
+                    self.alphas.sqrt().index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
+                )
+                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                    0, t
+                ).view(  # pyright: ignore[reportCallIssue]
+                    -1, 1, 1, 1
+                )
+
+                o = self.unet(x_t, t, y)
+                o_uncond = self.unet(x_t, t, y_uncond)
+                o = o_uncond + guidance_scale * (o - o_uncond)
+
+                # TODO Use posterior variance `√\tilde{β}_t` instead
+                x_t = (1 / sqrt_alphas) * (
+                    x_t - (betas / (sqrt_one_minus_alphas_bar)) * o
+                ) + z * betas.sqrt()
+
+        o: torch.Tensor = x_t.clamp(0, 1).permute(0, 2, 3, 1).cpu()
+        y = y.cpu()
+
+        return o, y
 
     @override
     def save(
@@ -489,11 +605,11 @@ class DDPM(DiffusionBaseModel):
         loaded_model = load_model(self.unet, self.config.name, label)
 
         if loaded_model is None:
-            self.logger.info(f"Model {self.config.name} not found.")
+            self.logger.info(f"Model {self.config.name}-{label} not found.")
             return
 
         # _ = self.unet.load_state_dict(loaded_model.state_dict())
-        self.logger.info(f"Model {self.config.name} loaded successfully.")
+        self.logger.info(f"Model {self.config.name}-{label} loaded successfully.")
 
     @override
     def train_epoch(
@@ -591,15 +707,18 @@ class DDPM(DiffusionBaseModel):
             f"Training {self.config.model} on {self.config.dataset} dataset"
         )
 
-        start = time.time()
+        # TODO - TEMP: xpu bug
+        self.to_device()
 
         optimizer = get_optimizer(self.config.optimizer)(
             self.parameters(), **self.config.optimizer_params.to_kwargs()
         )
         loss_function = get_loss_function(self.config.loss_function).to(self.device)
 
-        early_stop_counter = 0
+        early_stop_fn = early_stop(self.config)
         warning_printed = False
+
+        start = time.time()
 
         for epoch in range(self.config.epochs):
             self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")
@@ -623,120 +742,39 @@ class DDPM(DiffusionBaseModel):
                 self.config.save_after_n_epoch
                 and (epoch + 1) % self.config.save_after_n_epoch_period == 0
             ):
-                self.save(f"{self.config.name}_epoch_{epoch + 1}")
+                self.save(f"epoch-{epoch + 1}")
                 self.logger.info(f"Model saved at epoch {epoch + 1}")
+
+            if (epoch + 1) % 5 == 0:
+                self.predict(
+                    batch_size=16,
+                    steps=self.max_t,
+                    guidance_scale=2.5,
+                    seed=0,
+                    show=False,
+                    file_postfix=f"train_epoch_{epoch + 1}",
+                )
 
             if self.config.early_stopping:
                 if self.config.early_stopping_monitor == "val_loss":
-                    if not val_loader and not warning_printed:
+                    if self.config.validation is False and not warning_printed:
                         warning_printed = True
                         self.logger.warning(
                             "Early stopping is enabled but validation data loader is not provided."
                         )
                         continue
 
-                    if len(self.history.val_loss) < 2:
-                        continue
-
-                    if self.config.early_stopping_min_delta_strategy == "fixed":
-                        if (
-                            self.history.val_loss[-1]
-                            < self.history.val_loss[-2]
-                            + self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
-                    elif (
-                        self.config.early_stopping_min_delta_strategy
-                        == "previous_proportional"
-                    ):
-                        if (
-                            self.history.val_loss[-1]
-                            < self.history.val_loss[-2]
-                            + self.history.val_loss[-2]
-                            * self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
-                    elif (
-                        self.config.early_stopping_min_delta_strategy
-                        == "delta_proportional"
-                    ):
-                        if len(self.history.val_loss) >= 3:
-                            if (
-                                self.history.val_loss[-1]
-                                < self.history.val_loss[-2]
-                                + abs(
-                                    self.history.val_loss[-3]
-                                    - self.history.val_loss[-2]
-                                )
-                                * self.config.early_stopping_min_delta
-                            ):
-                                early_stop_counter = 0
-                            else:
-                                early_stop_counter += 1
+                    if early_stop_fn(self.history.val_loss):
+                        self.logger.info(
+                            f"Early stopping triggered after {epoch} epochs."
+                        )
+                        break
                 else:
-                    if len(self.history.train_loss) < 2:
-                        continue
-
-                    if self.config.early_stopping_min_delta_strategy == "fixed":
-                        if (
-                            self.history.train_loss[-1]
-                            < self.history.train_loss[-2]
-                            + self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
-                    elif (
-                        self.config.early_stopping_min_delta_strategy
-                        == "previous_proportional"
-                    ):
-                        if (
-                            self.history.train_loss[-1]
-                            < self.history.train_loss[-2]
-                            + self.history.train_loss[-2]
-                            * self.config.early_stopping_min_delta
-                        ):
-                            early_stop_counter = 0
-                        else:
-                            early_stop_counter += 1
-                    elif (
-                        self.config.early_stopping_min_delta_strategy
-                        == "delta_proportional"
-                    ):
-                        if len(self.history.train_loss) >= 3:
-                            if (
-                                self.history.train_loss[-1]
-                                < self.history.train_loss[-2]
-                                + abs(
-                                    self.history.train_loss[-3]
-                                    - self.history.train_loss[-2]
-                                )
-                                * self.config.early_stopping_min_delta
-                            ):
-                                early_stop_counter = 0
-                            else:
-                                early_stop_counter += 1
-
-            if (
-                self.config.early_stopping
-                and early_stop_counter >= self.config.early_stopping_patience
-            ):
-                self.logger.info(f"Early stopping triggered after {epoch} epochs.")
-                break
-
-            # self.predict(16, 20, 2.0, False, True, f"train_epoch_{epoch + 1}")
-            self.predict(
-                batch_size=16,
-                steps=self.max_t,
-                guidance_scale=2.5,
-                show=False,
-                save_file_postfix=f"train_epoch_{epoch + 1}",
-                seed=0,
-            )
+                    if early_stop_fn(self.history.train_loss):
+                        self.logger.info(
+                            f"Early stopping triggered after {epoch} epochs."
+                        )
+                        break
 
         _ = self.train(False)
 
@@ -750,98 +788,22 @@ class DDPM(DiffusionBaseModel):
     def predict(
         self,
         *,
-        batch_size: int = 64,
-        steps: int = 1000,
-        guidance_scale: float = 2.0,
+        steps: int,
+        guidance_scale: float,
+        prompt: int | None = None,
+        seed: int | None = None,
         show: bool = True,
         save: bool = True,
-        save_file_postfix: str = "",
-        seed: int | None = None,
+        batch_size: int = 8,
+        file_postfix: str = "",
     ):
-        _ = self.eval()
-        if seed is not None:
-            _ = torch.manual_seed(seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(seed)
+        o = self.forward(batch_size, steps, guidance_scale, prompt, seed)
 
-        if steps > self.max_t:
-            self.logger.error(f"Steps must be less than or equal max_t({self.max_t})")
+        if o is None:
+            self.logger.error("Cannot evaluate model")
             return
 
-        with torch.no_grad():
-            x_t = torch.randn(
-                (
-                    batch_size,
-                    self.dataset_info.channels,
-                    self.dataset_info.image_size,
-                    self.dataset_info.image_size,
-                ),
-                device=self.device,
-            )
-
-            if steps == self.max_t:
-                t_space = torch.arange(
-                    self.max_t - 1, -1, -1, device=self.device, dtype=torch.long
-                )
-            else:
-                stride = np.ceil(self.max_t / steps)
-                t_space = torch.arange(
-                    self.max_t - 1, -1, -stride, device=self.device, dtype=torch.long
-                )[:steps]
-
-            y = torch.randint(
-                0,
-                self.dataset_info.num_classes,
-                (batch_size,),
-                dtype=torch.long,
-                device=self.device,
-            )
-            y_uncond = torch.full_like(y, self.null_token)
-
-            for i, t_i in tqdm(enumerate(t_space), desc="Generating"):
-                t = t_i.expand(batch_size)
-                if i != steps - 1:
-                    z = torch.randn(
-                        (
-                            batch_size,
-                            self.dataset_info.channels,
-                            self.dataset_info.image_size,
-                            self.dataset_info.image_size,
-                        ),
-                        device=self.device,
-                    )
-                else:
-                    z = torch.zeros(
-                        (
-                            batch_size,
-                            self.dataset_info.channels,
-                            self.dataset_info.image_size,
-                            self.dataset_info.image_size,
-                        ),
-                        device=self.device,
-                    )
-
-                betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
-                sqrt_alphas = (
-                    self.alphas.sqrt().index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
-                )
-                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
-                    0, t
-                ).view(  # pyright: ignore[reportCallIssue]
-                    -1, 1, 1, 1
-                )
-
-                o = self.unet(x_t, t, y)
-                o_uncond = self.unet(x_t, t, y_uncond)
-                o = o_uncond + guidance_scale * (o - o_uncond)
-
-                # TODO Use posterior variance `√\tilde{β}_t` instead
-                x_t = (1 / sqrt_alphas) * (
-                    x_t - (betas / (sqrt_one_minus_alphas_bar)) * o
-                ) + z * betas.sqrt()
-
-        o = x_t.clamp(0, 1).permute(0, 2, 3, 1).cpu()
-        y = y.cpu().tolist()
+        images, y = o[0], o[1].tolist()
 
         def subplot_with_titles(images: torch.Tensor, labels: list[Any], nrow: int = 8):
             labels = [str(label) for label in labels]
@@ -866,8 +828,8 @@ class DDPM(DiffusionBaseModel):
 
             if save:
                 file_name = self.config.name
-                if save_file_postfix != "":
-                    file_name += f"_{save_file_postfix}"
+                if file_postfix != "":
+                    file_name += f"_{file_postfix}"
                 plt.savefig(f"images/{file_name}_predict.png")
 
             if show:
@@ -875,7 +837,7 @@ class DDPM(DiffusionBaseModel):
 
             plt.close()
 
-        subplot_with_titles(o, y, 8)
+        subplot_with_titles(images, y, 8)
 
     @override
     def summary(self, input_size: tuple[int, int, int, int]):

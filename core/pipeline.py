@@ -253,17 +253,17 @@ class DiffusionPipeline(Pipeline):
     model: DiffusionBaseModel
     dataset: TrainableDataset
 
-    def __init__(self, config: DiffusionConfig, load: bool = True):
+    def __init__(self, config: DiffusionConfig):
         super(DiffusionPipeline, self).__init__("DiffusionPipeline")
 
         self.config = config
         self.model = get_diffusion_model(self.config)
         self.dataset = get_dataset(self.config)
 
-        if load:
-            self.model.load()
-
         self.model.to_device()
+
+    def load(self, label: str = "last"):
+        self.model.load(label=label)
 
     @override
     def train(self):

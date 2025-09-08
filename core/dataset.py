@@ -159,21 +159,22 @@ def get_dataset(
     name = config.dataset
     batch_size = config.batch_size
     shuffle = config.shuffle
+    validation = config.validation
     match name:
         case "mnist":
-            return mnist(batch_size, shuffle, transform)
+            return mnist(batch_size, shuffle, transform, validation)
         case "padded_mnist":
-            return padded_mnist(batch_size, shuffle, transform)
+            return padded_mnist(batch_size, shuffle, transform, validation)
         case "cifar10":
-            return cifar10(batch_size, shuffle, transform)
+            return cifar10(batch_size, shuffle, transform, validation)
         case "cifar100":
-            return cifar100(batch_size, shuffle, transform)
+            return cifar100(batch_size, shuffle, transform, validation)
         case "fashion_mnist":
-            return fashion_mnist(batch_size, shuffle, transform)
+            return fashion_mnist(batch_size, shuffle, transform, validation)
         case "imagenet":
-            return imagenet(batch_size, shuffle, transform)
+            return imagenet(batch_size, shuffle, transform, validation)
         case "mini_imagenet":
-            return mini_imagenet(batch_size, shuffle, transform)
+            return mini_imagenet(batch_size, shuffle, transform, validation)
         case "df2k_ost":
             return get_df2k_ost(batch_size, shuffle, transform, input_transform)
         case "df2k_ost_small":
@@ -184,6 +185,7 @@ def mnist(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     if transform is None:
         logger.info("Using default transform for MNIST")
@@ -196,16 +198,26 @@ def mnist(
     else:
         logger.info("Using custom transform for MNIST")
 
-    train = datasets.MNIST("data", download=True, transform=transform, train=True)
-    test = datasets.MNIST("data", download=True, transform=transform, train=False)
+    train_set = datasets.MNIST("data", download=True, transform=transform, train=True)
+    test_set = datasets.MNIST("data", download=True, transform=transform, train=False)
 
-    validation = int(0.1 * len(train))
-    train_set, val_set = random_split(train, [len(train) - validation, validation])
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
 
     return TrainableDataset(
-        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
-        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -213,6 +225,7 @@ def padded_mnist(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     if transform is None:
         logger.info("Using default transform for Padded MNIST")
@@ -226,16 +239,26 @@ def padded_mnist(
     else:
         logger.info("Using custom transform for Padded MNIST")
 
-    train = datasets.MNIST("data", download=True, transform=transform, train=True)
-    test = datasets.MNIST("data", download=True, transform=transform, train=False)
+    train_set = datasets.MNIST("data", download=True, transform=transform, train=True)
+    test_set = datasets.MNIST("data", download=True, transform=transform, train=False)
 
-    validation = int(0.1 * len(train))
-    train_set, val_set = random_split(train, [len(train) - validation, validation])
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
 
     return TrainableDataset(
-        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
-        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -243,6 +266,7 @@ def cifar10(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     if transform is None:
         logger.info("Using default transform for CIFAR-10")
@@ -255,16 +279,26 @@ def cifar10(
     else:
         logger.info("Using custom transform for CIFAR-10")
 
-    train = datasets.CIFAR10("data", download=True, transform=transform, train=True)
-    test = datasets.CIFAR10("data", download=True, transform=transform, train=False)
+    train_set = datasets.CIFAR10("data", download=True, transform=transform, train=True)
+    test_set = datasets.CIFAR10("data", download=True, transform=transform, train=False)
 
-    validation = int(0.1 * len(train))
-    train_set, val_set = random_split(train, [len(train) - validation, validation])
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
 
     return TrainableDataset(
-        train=DataLoader(train_set, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
-        val=DataLoader(val_set, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -272,6 +306,7 @@ def cifar100(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     if transform is None:
         logger.info("Using default transform for CIFAR-100")
@@ -284,12 +319,30 @@ def cifar100(
     else:
         logger.info("Using custom transform for CIFAR-100")
 
-    train = datasets.CIFAR100("data", download=True, transform=transform, train=True)
-    test = datasets.CIFAR100("data", download=True, transform=transform, train=False)
+    train_set = datasets.CIFAR100(
+        "data", download=True, transform=transform, train=True
+    )
+    test_set = datasets.CIFAR100(
+        "data", download=True, transform=transform, train=False
+    )
+
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
 
     return TrainableDataset(
-        train=DataLoader(train, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -297,6 +350,7 @@ def fashion_mnist(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     if transform is None:
         logger.info("Using default transform for Fashion MNIST")
@@ -309,16 +363,30 @@ def fashion_mnist(
     else:
         logger.info("Using custom transform for Fashion MNIST")
 
-    train = datasets.FashionMNIST(
+    train_set = datasets.FashionMNIST(
         "data", download=True, transform=transform, train=True
     )
-    test = datasets.FashionMNIST(
+    test_set = datasets.FashionMNIST(
         "data", download=True, transform=transform, train=False
     )
 
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
+
     return TrainableDataset(
-        train=DataLoader(train, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -326,6 +394,7 @@ def imagenet(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     # ImageNet에 적합한 기본 transform 설정
     if transform is None:
@@ -355,12 +424,26 @@ def imagenet(
     test_size = val_size - train_size
     split = random_split(val, [train_size, test_size])
 
-    train = split[0]
-    test = split[1]
+    train_set = split[0]
+    test_set = split[1]
+
+    if validation:
+        validation_len = int(0.1 * len(train_set))
+        train_set, val_set = random_split(
+            train_set, [len(train_set) - validation_len, validation_len]
+        )
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = DataLoader(val_set, batch_size, shuffle)
+    else:
+        train = DataLoader(train_set, batch_size, shuffle)
+        val = None
+
+    test = DataLoader(test_set, batch_size, shuffle)
 
     return TrainableDataset(
-        train=DataLoader(train, batch_size=batch_size, shuffle=shuffle),
-        test=DataLoader(test, batch_size=batch_size, shuffle=False),
+        train=train,
+        test=test,
+        val=val,
     )
 
 
@@ -368,6 +451,7 @@ def mini_imagenet(
     batch_size: int,
     shuffle: bool,
     transform: Callable[[Any], torch.Tensor] | None = None,
+    validation: bool = True,
 ):
     # Mini-ImageNet에 적합한 기본 transform 설정
     if transform is None:
@@ -393,12 +477,17 @@ def mini_imagenet(
     # 각 split을 PyTorch 데이터셋으로 변환
     train_dataset = HFDataset(dataset["train"], transform)
     test_dataset = HFDataset(dataset["test"], transform)
-    val_dataset = HFDataset(dataset["validation"], transform)
+    if validation:
+        val = DataLoader(
+            HFDataset(dataset["validation"], transform), batch_size, shuffle
+        )
+    else:
+        val = None
 
     return TrainableDataset(
         train=DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
         test=DataLoader(test_dataset, batch_size=batch_size, shuffle=False),
-        val=DataLoader(val_dataset, batch_size=batch_size, shuffle=False),
+        val=val,
     )
 
 

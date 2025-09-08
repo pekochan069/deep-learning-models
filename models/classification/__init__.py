@@ -36,23 +36,23 @@ def get_classification_model(config: ClassificationConfig):
             return LeNet(config)
         case "alex_net":
             return AlexNet(config)
-        case "vgg_net11":
+        case "vgg_net_11":
             return VGGNet11(config)
-        case "vgg_net13":
+        case "vgg_net_13":
             return VGGNet13(config)
-        case "vgg_net16":
+        case "vgg_net_16":
             return VGGNet16(config)
-        case "vgg_net19":
+        case "vgg_net_19":
             return VGGNet19(config)
-        case "res_net18":
+        case "res_net_18":
             return ResNet18(config)
-        case "res_net34":
+        case "res_net_34":
             return ResNet34(config)
-        case "res_net50":
+        case "res_net_50":
             return ResNet50(config)
-        case "res_net101":
+        case "res_net_101":
             return ResNet101(config)
-        case "res_net152":
+        case "res_net_152":
             return ResNet152(config)
         case "inception_v1":
             return InceptionV1(config)
@@ -60,13 +60,13 @@ def get_classification_model(config: ClassificationConfig):
             return InceptionV2(config)
         case "dense_net_cifar":
             return DenseNetCifar(config)
-        case "dense_net121":
+        case "dense_net_121":
             return DenseNet121(config)
-        case "dense_net169":
+        case "dense_net_169":
             return DenseNet169(config)
-        case "dense_net201":
+        case "dense_net_201":
             return DenseNet201(config)
-        case "dense_net264":
+        case "dense_net_264":
             return DenseNet264(config)
         case "mobile_net":
             return MobileNet(config)
