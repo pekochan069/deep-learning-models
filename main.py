@@ -551,8 +551,9 @@ def main():
     DiffusionConfig.save_config(config)
 
     pipeline = DiffusionPipeline(config)
-    # pipeline.load("last")
     # pipeline.train()
+
+    # pipeline.load("last")
     # pipeline.evaluate(steps=1000, guidance_scale=2.5)
 
     # pipeline.evaluate(
@@ -606,15 +607,15 @@ def main():
     # _ = plt.show()
     # plt.close()
 
-    for i in range(5, 96, 5):
+    for i in range(10, 101, 10):
         pipeline.load(f"epoch-{i}")
 
         pipeline.evaluate(
             steps=1000,
             guidance_scale=2.5,
             show=False,
-            file_postfix=f"epoch-{i}-seed-12",
-            seed=12,
+            file_postfix=f"epoch-{i}-seed-25",
+            seed=25,
             batch_size=16,
         )
 
