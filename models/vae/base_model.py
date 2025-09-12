@@ -1,5 +1,5 @@
-from abc import ABC
 import time
+from abc import ABC
 from typing import override
 
 import matplotlib.pyplot as plt
@@ -7,19 +7,23 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from core.config import DiffusionConfig
+from core.config import VAEConfig
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.weights import load_model_old, save_model_old
-from ..base_model import DiffusionBaseModel
+from ..base_model import BaseModel
+from ..classification.base_model import History
 
 
-class VAEBaseModel(DiffusionBaseModel, ABC):
+class VAEBaseModel(BaseModel, ABC):
     encoder: nn.Module
     decoder: nn.Module
 
-    def __init__(self, config: DiffusionConfig):
-        super(VAEBaseModel, self).__init__(config)
+    def __init__(self, config: VAEConfig):
+        super(VAEBaseModel, self).__init__("VAE")
+
+        self.config = config
+        self.history = History()
 
     @override
     def save(self, name: str | None = None):

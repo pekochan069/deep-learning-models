@@ -24,6 +24,8 @@ from core.seed import set_seed
 from core.train_utils import early_stop
 from core.weights import load_model, save_model
 from ..base_model import DiffusionBaseModel
+from ..names import SchedulerName, SamplerName
+from ..sampler import Sampler
 
 
 def gn_groups(c: int, max_groups: int = 32) -> int:
@@ -399,9 +401,9 @@ class DDPM(DiffusionBaseModel):
     def __init__(
         self,
         config: DiffusionConfig,
-        max_t: int,
+        max_T: int,
         beta_1: float,
-        beta_t: float,
+        beta_T: float,
         cfg_unconditional_prob: float,
         base_unet_dim: int,
         t_emb_dim: int,
@@ -411,35 +413,37 @@ class DDPM(DiffusionBaseModel):
         gradient_clipping: bool,
         max_clip_norm: int,
     ):
-        assert max_t > 0
+        assert max_T > 0
         assert 0 < beta_1 < 1
-        assert 0 < beta_t < 1
+        assert 0 < beta_T < 1
         assert t_emb_dim > 0 and t_emb_dim % 4 == 0
         super().__init__(config)
 
         self.dataset_info = get_dataset_info(self.config.dataset)
 
-        self.max_t = max_t
+        self.max_T = max_T
         self.beta_1 = beta_1
-        self.beta_t = beta_t
-        self.alpha_t = 1 - self.beta_t
+        self.beta_T = beta_T
+        self.alpha_t = 1 - self.beta_T
         self.cfg_unconditional_prob = cfg_unconditional_prob
         self.t_emb_dim = t_emb_dim
         self.null_token = self.dataset_info.num_classes
         self.gradient_clipping = gradient_clipping
         self.max_norm = max_clip_norm
 
-        betas = torch.linspace(self.beta_1, self.beta_t, self.max_t)
-        alphas: torch.Tensor = 1 - betas
-        alphas_bar = torch.cumprod(alphas, -1)
-        sqrt_alphas_bar = torch.sqrt(alphas_bar)
-        sqrt_one_minus_alphas_bar = torch.sqrt(1 - alphas_bar)
+        # betas = torch.linspace(self.beta_1, self.beta_T, self.max_T)
+        # alphas: torch.Tensor = 1 - betas
+        # alphas = torch.linspace(self.beta_T, self.beta_1, self.max_T)
+        # alphas_bar = torch.cumprod(alphas, -1)
+        # sqrt_alphas_bar = torch.sqrt(alphas_bar)
+        # sqrt_one_minus_alphas_bar = torch.sqrt(1 - alphas_bar)
 
-        self.register_buffer("betas", betas)
-        self.register_buffer("alphas", alphas)
-        self.register_buffer("alphas_bar", alphas_bar)
-        self.register_buffer("sqrt_alphas_bar", sqrt_alphas_bar)
-        self.register_buffer("sqrt_one_minus_alphas_bar", sqrt_one_minus_alphas_bar)
+        # self.register_buffer("betas", betas)
+        # self.register_buffer("alphas", alphas)
+        # self.register_buffer("alphas_bar", alphas_bar)
+        # self.register_buffer("sqrt_alphas_bar", sqrt_alphas_bar)
+        # self.register_buffer("sqrt_one_minus_alphas_bar", sqrt_one_minus_alphas_bar)
+        # x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
 
         self.unet = UNet(
             self.dataset_info.channels,
@@ -477,17 +481,29 @@ class DDPM(DiffusionBaseModel):
         batch_size: int,
         steps: int,
         guidance_scale: float,
+        scheduler_name: SchedulerName,
+        sampler_name: SamplerName,
         prompt: int | None = None,
         seed: int | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor] | None:
         _ = self.eval()
         set_seed(seed)
 
-        if steps > self.max_t:
-            self.logger.error(f"Steps must be less than or equal max_t({self.max_t})")
+        if steps > self.max_T:
+            self.logger.error(f"Steps must be less than or equal max_t({self.max_T})")
             return
 
         with torch.no_grad():
+            sampler = Sampler(
+                scheduler_name,
+                sampler_name,
+                device=self.device,
+                max_T=self.max_T,
+                beta_1=self.beta_1,
+                beta_T=self.beta_T,
+                dtype=torch.float,
+            )
+
             x_t = torch.randn(
                 (
                     batch_size,
@@ -498,9 +514,9 @@ class DDPM(DiffusionBaseModel):
                 device=self.device,
             )
 
-            if steps == self.max_t:
+            if steps == self.max_T:
                 t_space = torch.arange(
-                    self.max_t - 1, -1, -1, device=self.device, dtype=torch.long
+                    self.max_T - 1, -1, -1, device=self.device, dtype=torch.long
                 )
             else:
                 # stride = np.ceil(self.max_t / steps)
@@ -508,7 +524,7 @@ class DDPM(DiffusionBaseModel):
                 #     self.max_t - 1, -1, -stride, device=self.device, dtype=torch.long
                 # )[:steps]
                 indices = (
-                    torch.linspace(0, self.max_t - 1, steps, device=self.device)
+                    torch.linspace(0, self.max_T - 1, steps, device=self.device)
                     .round()
                     .long()
                 )
@@ -554,24 +570,25 @@ class DDPM(DiffusionBaseModel):
                         device=self.device,
                     )
 
-                betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
-                sqrt_alphas = (
-                    self.alphas.sqrt().index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
-                )
-                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
-                    0, t
-                ).view(  # pyright: ignore[reportCallIssue]
-                    -1, 1, 1, 1
-                )
-
                 o = self.unet(x_t, t, y)
                 o_uncond = self.unet(x_t, t, y_uncond)
                 o = o_uncond + guidance_scale * (o - o_uncond)
 
-                # TODO Use posterior variance `√\tilde{β}_t` instead
-                x_t = (1 / sqrt_alphas) * (
-                    x_t - (betas / (sqrt_one_minus_alphas_bar)) * o
-                ) + z * betas.sqrt()
+                # betas = self.betas.index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
+                # sqrt_alphas = (
+                #     self.alphas.sqrt().index_select(0, t).view(-1, 1, 1, 1)  # pyright: ignore[reportCallIssue]
+                # )
+                # sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                #     0, t
+                # ).view(  # pyright: ignore[reportCallIssue]
+                #     -1, 1, 1, 1
+                # )
+
+                # # TODO Use posterior variance `√\tilde{β}_t` instead
+                # x_t = (1 / sqrt_alphas) * (
+                #     x_t - (betas / (sqrt_one_minus_alphas_bar)) * o
+                # ) + z * betas.sqrt()
+                x_t = sampler.step(o, x_t, z, t)
 
         o: torch.Tensor = x_t.clamp(0, 1).permute(0, 2, 3, 1).cpu()
         y = y.cpu()
@@ -617,6 +634,7 @@ class DDPM(DiffusionBaseModel):
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
         optimizer: optim.Optimizer,
         loss_function: nn.Module,
+        sampler: Sampler,
     ):
         _ = self.train()
         epoch_loss = 0.0
@@ -631,19 +649,20 @@ class DDPM(DiffusionBaseModel):
 
             batch_size = x.size(0)
 
-            t = torch.randint(0, self.max_t, (batch_size,), device=self.device)
+            t = torch.randint(0, self.max_T, (batch_size,), device=self.device)
             eps = torch.randn(x.shape, device=self.device)
 
-            sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
-                batch_size, 1, 1, 1
-            )
-            sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
-                0, t
-            ).view(  # pyright: ignore[reportCallIssue]
-                batch_size, 1, 1, 1
-            )
+            # sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
+            #     batch_size, 1, 1, 1
+            # )
+            # sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+            #     0, t
+            # ).view(  # pyright: ignore[reportCallIssue]
+            #     batch_size, 1, 1, 1
+            # )
 
-            x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
+            # x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
+            x_t = sampler.train_step(x, t)
 
             eps_t = self.unet(x_t, t, y)
 
@@ -663,6 +682,7 @@ class DDPM(DiffusionBaseModel):
         self,
         val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
         loss_function: nn.Module,
+        sampler: Sampler,
     ):
         _ = self.eval()
         epoch_loss = 0.0
@@ -675,19 +695,20 @@ class DDPM(DiffusionBaseModel):
 
                 batch_size = x.size(0)
 
-                t = torch.randint(0, self.max_t, (batch_size,), device=self.device)
+                t = torch.randint(0, self.max_T, (batch_size,), device=self.device)
                 eps = torch.randn(x.shape, device=self.device)
 
-                sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
-                    -1, 1, 1, 1
-                )
-                sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
-                    0, t
-                ).view(  # pyright: ignore[reportCallIssue]
-                    -1, 1, 1, 1
-                )
+                # sqrt_alphas_bar = self.sqrt_alphas_bar.index_select(0, t).view(  # pyright: ignore[reportCallIssue]
+                #     -1, 1, 1, 1
+                # )
+                # sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_bar.index_select(
+                #     0, t
+                # ).view(  # pyright: ignore[reportCallIssue]
+                #     -1, 1, 1, 1
+                # )
 
-                x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
+                # x_t = sqrt_alphas_bar * x + sqrt_one_minus_alphas_bar * eps
+                x_t = sampler.train_step(x, t)
 
                 eps_t = self.unet(x_t, t, y)
 
@@ -701,6 +722,8 @@ class DDPM(DiffusionBaseModel):
     def fit(
         self,
         train_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        scheduler_name: SchedulerName,
+        sampler_name: SamplerName,
         val_loader: DataLoader[tuple[torch.Tensor, torch.Tensor]] | None = None,
     ) -> None:
         self.logger.info(
@@ -720,15 +743,27 @@ class DDPM(DiffusionBaseModel):
 
         start = time.time()
 
+        sampler = Sampler(
+            scheduler_name,
+            sampler_name,
+            device=self.device,
+            max_T=self.max_T,
+            beta_1=self.beta_1,
+            beta_T=self.beta_T,
+            dtype=torch.float,
+        )
+
         for epoch in range(self.config.epochs):
             self.logger.info(f"Training epoch {epoch + 1}/{self.config.epochs}")
 
-            epoch_loss = self.train_epoch(train_loader, optimizer, loss_function)
+            epoch_loss = self.train_epoch(
+                train_loader, optimizer, loss_function, sampler
+            )
 
             self.history.train_loss.append(epoch_loss)
 
             if val_loader:
-                epoch_val_loss = self.validate_epoch(val_loader, loss_function)
+                epoch_val_loss = self.validate_epoch(val_loader, loss_function, sampler)
                 self.history.val_loss.append(epoch_val_loss)
                 self.logger.info(
                     f"Epoch {epoch + 1}/{self.config.epochs} finished, Train Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}"
@@ -748,8 +783,10 @@ class DDPM(DiffusionBaseModel):
             if (epoch + 1) % 5 == 0:
                 self.predict(
                     batch_size=16,
-                    steps=self.max_t,
+                    steps=self.max_T,
                     guidance_scale=2.5,
+                    scheduler_name=scheduler_name,
+                    sampler_name=sampler_name,
                     seed=0,
                     show=False,
                     file_postfix=f"train_epoch_{epoch + 1}",
@@ -790,6 +827,8 @@ class DDPM(DiffusionBaseModel):
         *,
         steps: int,
         guidance_scale: float,
+        scheduler_name: SchedulerName,
+        sampler_name: SamplerName,
         prompt: int | None = None,
         seed: int | None = None,
         show: bool = True,
@@ -797,7 +836,15 @@ class DDPM(DiffusionBaseModel):
         batch_size: int = 8,
         file_postfix: str = "",
     ):
-        o = self.forward(batch_size, steps, guidance_scale, prompt, seed)
+        o = self.forward(
+            batch_size,
+            steps,
+            guidance_scale,
+            scheduler_name,
+            sampler_name,
+            prompt,
+            seed,
+        )
 
         if o is None:
             self.logger.error("Cannot evaluate model")

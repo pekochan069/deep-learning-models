@@ -11,12 +11,12 @@ from einops import rearrange, repeat
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from core.config import DiffusionConfig
+from core.config import VAEConfig
 from core.dataset import get_channels, get_image_size, get_num_classes
 from core.loss import get_loss_function
 from core.optimizer import get_optimizer
 from core.registry import ModelRegistry
-from .base_vae import VAEBaseModel
+from ..base_model import VAEBaseModel
 
 
 @final
@@ -315,7 +315,7 @@ class Decoder(nn.Module):
 class CFGVQVAE(VAEBaseModel):
     def __init__(
         self,
-        config: DiffusionConfig,
+        config: VAEConfig,
         encoder_embedding_dim: int,
         vector_dim: int,
         embedding_dim: int,

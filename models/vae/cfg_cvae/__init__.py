@@ -9,10 +9,10 @@ from einops import repeat
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from core.config import DiffusionConfig
+from core.config import VAEConfig
 from core.dataset import get_num_classes
 from core.registry import ModelRegistry
-from .base_vae import VAEBaseModel
+from ..base_model import VAEBaseModel
 
 
 @final
@@ -146,7 +146,7 @@ class Decoder(nn.Module):
 class CFGCVAE(VAEBaseModel):
     def __init__(
         self,
-        config: DiffusionConfig,
+        config: VAEConfig,
         hidden_dim: int,
         latent_dim: int,
         embedding_dim: int,

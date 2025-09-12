@@ -52,14 +52,14 @@ GANModelName = Literal[
     "esrgan_plus",
     "real_esrgan",
 ]
-DiffusionModelName = Literal[
+VAEModelName = Literal[
     "simple_vae",
     "cvae",
     "conditional_cvae",
     "cfg_cvae",
     "cfg_vq_vae",
-    "ddpm",
 ]
+DiffusionModelName = Literal["ddpm",]
 LossFunctionName = Literal[
     "l1",
     "nll",

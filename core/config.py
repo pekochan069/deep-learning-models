@@ -4,8 +4,8 @@ import os
 from typing import Any, Literal, Self
 from pydantic import BaseModel as PydanticBaseModel
 
+
 from .optimizer import AdamWParams, OptimizerParams
-from .model_params import DiffusionModelParams
 from .names import (
     DatasetName,
     ClassificationModelName,
@@ -13,7 +13,10 @@ from .names import (
     GANModelName,
     LossFunctionName,
     OptimizerName,
+    VAEModelName,
 )
+from .model_params.vae_model_params import VAEModelParams
+from .model_params.diffusion_model_params import DiffusionModelParams
 
 logger = logging.getLogger("Config")
 
@@ -88,6 +91,14 @@ class GANConfig(Config):
     load_pretrained: bool = False
     show_pretrained_plot: bool = False
     save_pretrained_plot: bool = True
+
+
+class VAEConfig(Config):
+    model: VAEModelName
+    model_params: VAEModelParams
+    optimizer: OptimizerName
+    optimizer_params: OptimizerParams
+    loss_function: LossFunctionName
 
 
 class DiffusionConfig(Config):

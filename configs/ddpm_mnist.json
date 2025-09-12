@@ -17,9 +17,9 @@
     "model": "ddpm",
     "model_params": {
         "param_type": "ddpm",
-        "max_t": 1000,
+        "max_T": 1000,
         "beta_1": 0.0001,
-        "beta_t": 0.02,
+        "beta_T": 0.02,
         "cfg_unconditional_prob": 0.1,
         "base_unet_dim": 64,
         "t_emb_dim": 64,

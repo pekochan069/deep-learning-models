@@ -5,15 +5,18 @@ from typing import Any, Callable, final, override
 
 import torch
 
-from core.config import ClassificationConfig, DiffusionConfig, GANConfig
+from core.config import ClassificationConfig, DiffusionConfig, GANConfig, VAEConfig
 from core.dataset import TrainableDataset, get_dataset
-from core.registry import ModelRegistry
 from models.classification import get_classification_model
 from models.classification.base_model import ClassificationBaseModel
 from models.diffusion import get_diffusion_model
 from models.diffusion.base_model import DiffusionBaseModel
+from models.diffusion.ddpm import SamplerName
+from models.diffusion.names import SchedulerName
 from models.gan import get_gan_model
 from models.gan.base_model import GANBaseModel
+from models.vae import get_vae_model
+from models.vae.base_model import VAEBaseModel
 
 
 class Pipeline(metaclass=ABCMeta):
@@ -31,17 +34,17 @@ class Pipeline(metaclass=ABCMeta):
         self.logger.info("Cache cleared and garbage collection invoked.")
 
     @abstractmethod
-    def train(self):
+    def train(self, *args, **kwargs):
         """Train the model."""
         pass
 
     @abstractmethod
-    def evaluate(self):
+    def evaluate(self, *args, **kwargs):
         """Evaluate the model."""
         pass
 
     @abstractmethod
-    def run(self):
+    def run(self, *args, **kwargs):
         """Run the complete pipeline: train and evaluate."""
         pass
 
@@ -248,22 +251,23 @@ class GANPipeline(Pipeline):
 
 
 @final
-class DiffusionPipeline(Pipeline):
-    config: DiffusionConfig
-    model: DiffusionBaseModel
+class VAEPipeline(Pipeline):
+    config: VAEConfig
+    model: VAEBaseModel
     dataset: TrainableDataset
 
-    def __init__(self, config: DiffusionConfig):
-        super(DiffusionPipeline, self).__init__("DiffusionPipeline")
+    def __init__(self, config: VAEConfig):
+        super(VAEPipeline, self).__init__("VAEPipeline")
 
         self.config = config
-        self.model = get_diffusion_model(self.config)
+        self.model = get_vae_model(self.config)
         self.dataset = get_dataset(self.config)
 
         self.model.to_device()
 
-    def load(self, label: str = "last"):
-        self.model.load(label=label)
+    def load(self):
+        # self.model.load(label=label)
+        self.model.load()
 
     @override
     def train(self):
@@ -313,4 +317,116 @@ class DiffusionPipeline(Pipeline):
         """Run the complete pipeline: train and evaluate."""
         self.train()
         self.evaluate(*args, **kwargs)
+        self.logger.info(f"Full pipeline completed for {self.config.name}")
+
+
+@final
+class DiffusionPipeline(Pipeline):
+    config: DiffusionConfig
+    model: DiffusionBaseModel
+    dataset: TrainableDataset
+
+    def __init__(self, config: DiffusionConfig):
+        super(DiffusionPipeline, self).__init__("DiffusionPipeline")
+
+        self.config = config
+        self.model = get_diffusion_model(self.config)
+        self.dataset = get_dataset(self.config)
+
+        self.model.to_device()
+
+    def load(self, label: str = "last"):
+        self.model.load(label=label)
+
+    @override
+    def train(self, scheduler: SchedulerName, sampler: SamplerName):
+        """Execute the complete training pipeline."""
+        # Display model summary
+        if self.config.dataset in ["mnist", "fashion_mnist"]:
+            input_size = (1, 1, 28, 28)
+        elif self.config.dataset in ["padded_mnist"]:
+            input_size = (1, 1, 32, 32)
+        elif self.config.dataset in ["cifar10", "cifar100"]:
+            input_size = (1, 3, 32, 32)
+        else:  # imagenet, mini_imagenet
+            input_size = (1, 3, 224, 224)
+        self.model.summary(input_size)
+
+        self.logger.info(f"Starting training pipeline for {self.config.name}")
+        self.logger.info(f"Dataset: {self.config.dataset}")
+        self.logger.info(f"Train data shape: {self.dataset.train.dataset[0][0].shape}")
+        self.logger.info(f"Training Steps per Epoch: {len(self.dataset.train)}")
+        self.logger.info(
+            f"Training Steps: {len(self.dataset.train) * self.config.epochs}"
+        )
+
+        # Train the model
+        self.model.fit(self.dataset.train, self.dataset.val, scheduler, sampler)
+
+        # Plot training history
+        self.model.plot_history(self.config.show_plot, self.config.save_plot)
+
+        # Save the trained model
+        self.model.save()
+
+        self.logger.info(f"Training pipeline completed for {self.config.name}")
+
+    @override
+    def evaluate(
+        self,
+        scheduler: SchedulerName,
+        sampler: SamplerName,
+        batch_size: int,
+        steps: int,
+        guidance_scale: float,
+        prompt: int | None = None,
+        seed: int | None = None,
+        show: bool = True,
+        save: bool = True,
+        file_postfix: str = "",
+    ):
+        """Evaluate a trained model."""
+        self.logger.info(f"Loading and evaluating model {self.config.name}")
+
+        # Evaluate on test set
+        self.model.predict(
+            scheduler_name=scheduler,
+            sampler_name=sampler,
+            batch_size=batch_size,
+            steps=steps,
+            guidance_scale=guidance_scale,
+            prompt=prompt,
+            seed=seed,
+            show=show,
+            save=save,
+            file_postfix=file_postfix,
+        )
+
+        self.logger.info(f"Evaluation completed for {self.config.name}")
+
+    @override
+    def run(
+        self,
+        scheduler: SchedulerName,
+        sampler: SamplerName,
+        batch_size: int,
+        steps: int,
+        guidance_scale: float,
+        prompt: int | None = None,
+        seed: int | None = None,
+        show: bool = True,
+        save: bool = True,
+        file_postfix: str = "",
+    ):
+        """Run the complete pipeline: train and evaluate."""
+        self.train(scheduler=scheduler, sampler=sampler)
+        self.evaluate(
+            scheduler=scheduler,
+            sampler=sampler,
+            batch_size=batch_size,
+            steps=steps,
+            guidance_scale=guidance_scale,
+            prompt=prompt,
+            seed=seed,
+        )
         self.logger.info(f"Full pipeline completed for {self.config.name}")

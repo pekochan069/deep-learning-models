@@ -9,9 +9,9 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
 
-from core.config import DiffusionConfig
+from core.config import VAEConfig
 from core.registry import ModelRegistry
-from .base_vae import VAEBaseModel
+from ..base_model import VAEBaseModel
 
 
 @final
@@ -81,7 +81,7 @@ class SimpleVAEDecoder(nn.Module):
 @ModelRegistry.register("simple_vae")
 @final
 class SimpleVAE(VAEBaseModel):
-    def __init__(self, config: DiffusionConfig, hidden_dim: int, latent_dim: int):
+    def __init__(self, config: VAEConfig, hidden_dim: int, latent_dim: int):
         super().__init__(config)
 
         self.hidden_dim = hidden_dim

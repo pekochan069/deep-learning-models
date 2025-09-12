@@ -5,51 +5,12 @@ from pydantic import ConfigDict, Field
 from core.pydantic import ParametersBase
 
 
-class SimpleVAEParams(ParametersBase):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["simple_vae"] = "simple_vae"
-    hidden_dim: int = 200
-    latent_dim: int = 20
-
-
-class CVAEParams(ParametersBase):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["cvae"] = "cvae"
-    hidden_dim: int = 8
-    latent_dim: int = 24
-
-
-class ConditionalCVAEParams(ParametersBase):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["conditional_vae"] = "conditional_vae"
-    hidden_dim: int = 16
-    latent_dim: int = 64
-
-
-class CFGCVAEParams(ParametersBase):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["cfg_cvae"] = "cfg_cvae"
-    hidden_dim: int = 16
-    latent_dim: int = 64
-    embedding_dim: int = 8
-
-
-class CFGVQVAEParams(ParametersBase):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    param_type: Literal["cfg_vq_vae"] = "cfg_vq_vae"
-    encoder_embedding_dim: int = 8
-    vector_dim: int = 512
-    embedding_dim: int = 64
-    beta: float = 0.25
-    gamma: float = 0.99
-
-
 class DDPMParams(ParametersBase):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     param_type: Literal["ddpm"] = "ddpm"
-    max_t: int = 1000
+    max_T: int = 1000
     beta_1: float = 1e-4
-    beta_t: float = 0.02
+    beta_T: float = 0.02
     cfg_unconditional_prob: float = 0.1
     base_unet_dim: int = 64
     t_emb_dim: int = 64
@@ -61,11 +22,6 @@ class DDPMParams(ParametersBase):
 
 
 DiffusionModelParams = Annotated[
-    SimpleVAEParams
-    | CVAEParams
-    | ConditionalCVAEParams
-    | CFGCVAEParams
-    | CFGVQVAEParams
-    | DDPMParams,
+    DDPMParams,
     Field(discriminator="param_type"),
 ]
