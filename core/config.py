@@ -40,8 +40,8 @@ class Config(PydanticBaseModel):
     show_plot: bool = True
     save_plot: bool = True
 
-    @classmethod
-    def save_config(cls, config: Self):
+    # @classmethod
+    def save_config(self, config: Self):
         if not os.path.exists("configs"):
             logger.debug("Configs directory does not exist. Creating directory...")
             os.makedirs("configs")
@@ -50,10 +50,10 @@ class Config(PydanticBaseModel):
             json.dump(config.model_dump(exclude_none=True), f, indent=4)
             logger.info(f"Config saved to configs/{config.name}.json")
 
-    @classmethod
-    def load_config(cls, name: str):
+    # @classmethod
+    def load_config(self, name: str):
         with open(f"configs/{name}.json", "r") as f:
-            config = cls.model_validate_json(f.read())
+            config = self.model_validate_json(f.read())
             logger.info(f"Config loaded from configs/{name}.json")
 
             return config

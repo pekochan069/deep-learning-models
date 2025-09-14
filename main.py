@@ -40,14 +40,14 @@ def main():
         early_stopping_min_delta=0.02,
         early_stopping_min_delta_strategy="delta_proportional",
     )
-    DiffusionConfig.save_config(config)
+    config.save_config(config)
 
     pipeline = DiffusionPipeline(config)
     # pipeline.train()
 
     pipeline.load("last")
     pipeline.evaluate(
-        scheduler="linear",
+        scheduler="quadratic",
         sampler="ddpm",
         batch_size=16,
         steps=1000,
